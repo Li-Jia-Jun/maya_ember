@@ -143,9 +143,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="bsp.h" />
+    <ClInclude Include="ember.h" />
+    <ClInclude Include="geometry.h" />
     <ClInclude Include="hello_maya.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bsp.cpp" />
+    <ClCompile Include="ember.cpp" />
     <ClCompile Include="hello_maya.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

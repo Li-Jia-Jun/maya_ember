@@ -18,9 +18,27 @@
     <ClInclude Include="hello_maya.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ember.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bsp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hello_maya.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bsp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ember.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
