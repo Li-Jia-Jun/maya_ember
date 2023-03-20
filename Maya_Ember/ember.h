@@ -1,6 +1,5 @@
 #pragma once
 
-#include "geometry.h"
 #include "bsp.h"
 
 

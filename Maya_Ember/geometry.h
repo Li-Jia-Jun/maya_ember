@@ -86,7 +86,7 @@ namespace ember
 		std::vector<Plane> bounds;
 	};
 
-	class Mesh
+	struct Mesh
 	{
 		int id; // Id also indicates its index in WNTV(delta w)
 		std::vector<Polygon> polygons;

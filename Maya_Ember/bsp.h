@@ -1,13 +1,13 @@
 #pragma once
 
-#include "geometry.h"
+#include "util.h"
 
 namespace ember
 {
 	struct AABB 
 	{
 		Point min, max;
-		std::vector<Polygon&> polygons;
+		std::vector<Polygon> polygons;
 	};
 
 	struct RefPoint
