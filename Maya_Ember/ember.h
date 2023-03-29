@@ -1,5 +1,4 @@
 #pragma once
-
 #include "bsp.h"
 
 
@@ -8,16 +7,21 @@ namespace ember
 	class EMBER
 	{
 	public:
-		EMBER(std::vector<Mesh>& inputs);
+		EMBER();
+
+		void ReadMeshDataFromTriangles(std::vector<std::vector<ivec3>> &vertices, std::vector<ivec3> &normals);
+
+		void SetInitBound(AABB bound);
 
 		void BuildBSPTree();
-		
-		AABB GetMeshesBound();
+
+		void AddPolygon(Polygon* p);
 
 	private:
-		std::vector<Mesh> meshes; // All the meshes in this EMBER operation
-		BSPTree bspTree;		
-		
+		int meshId;						// Incremental count of meshes
+		std::vector<Polygon*> polygons;
+		AABB initBound;
+		BSPTree bspTree;
 	};
 }
 

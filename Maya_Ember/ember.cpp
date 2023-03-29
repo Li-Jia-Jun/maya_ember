@@ -2,28 +2,44 @@
 
 using namespace ember;
 
-EMBER::EMBER(std::vector<Mesh>& inputs)
+EMBER::EMBER()
 {
-	for (int i = 0; i < inputs.size(); i++)
+}
+
+void EMBER::ReadMeshDataFromTriangles(std::vector<std::vector<ivec3>> &vertices, std::vector<ivec3> &normals)
+{
+	// Add all triangles to polygon soup
+	for (int i = 0; i < vertices.size(); i++)
 	{
-		meshes.push_back(inputs[i]);
+		std::vector<ivec3> pos{vertices[i][0], vertices[i][1], vertices[i][2]}; 
+		polygons.push_back(new Polygon(getPlaneBasedPolygonFromTriangle(pos, normals[i], meshId)));
 	}
+
+	meshId++;
+}
+
+void EMBER::SetInitBound(AABB bound)
+{
+	initBound = bound;
 }
 
 void EMBER::BuildBSPTree()
 {
 	// Build root node
-	AABB initBound = GetMeshesBound();
-	BSPNode root;
-	root.bound = initBound;
-	
-	// Build tree recursively
+	BSPNode *root = new BSPNode();
+	root->bound = initBound;
+	root->polygons = polygons;
 
+	RefPoint refPoint;
+	refPoint.pos = initBound.min;
+	refPoint.WNV = std::vector<int>(meshId, 0);
+	root->refPoint = refPoint;
+
+	// Build BSP tree based on root node
+	bspTree.Build(root);
 }
 
-AABB EMBER::GetMeshesBound()
+void EMBER::AddPolygon(Polygon* p)
 {
-	// LEO:: compute a bounding box for all meshes
-
-	return AABB();
+	polygons.push_back(p);
 }

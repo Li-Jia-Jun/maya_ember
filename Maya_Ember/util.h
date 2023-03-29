@@ -4,7 +4,6 @@
 
 namespace ember
 {
-
 	// ======== Basic Math =============
 
 	int multiply(Point x, Plane s);
@@ -21,14 +20,13 @@ namespace ember
 	// ==================================
 
 
-
 	// ======== Mesh Operation =============
-
-	Plane getPlaneFromPositions(ivec3 p1, ivec3 p2, ivec3 p3);
-
-	Polygon getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int meshId);
-
+	
 	Point intersect(Plane p, Plane q, Plane r);
+
+	Point getPointFromVertexPos(ivec3 pos);
+
+	Polygon getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3 normal, int meshId);
 
 	int classify(Point x, Plane s);
 

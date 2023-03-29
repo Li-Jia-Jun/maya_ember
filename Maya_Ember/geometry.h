@@ -48,6 +48,7 @@ namespace ember
 	struct Point
 	{
 		// Homogenerous coordinate (obtained from intersect())
+		// For points that
 		int x1, x2, x3, x4;
 	};
 
@@ -65,6 +66,16 @@ namespace ember
 		{
 			return Plane {nor.x, nor.y, nor.z,
 				-(nor.x * p.x + nor.y * p.y + nor.z * p.z)};
+		}
+
+		static Plane getPlaneFromTriangle(ivec3 p1, ivec3 p2, ivec3 p3)
+		{
+			ivec3 e1 = p1 - p2;
+			ivec3 e2 = p1 - p3;
+
+			ivec3 nor = e1.cross(e2);
+
+			return Plane::fromPositionNormal(p3, nor);
 		}
 	};
 
@@ -89,7 +100,6 @@ namespace ember
 	struct Mesh
 	{
 		int id; // Id also indicates its index in WNTV(delta w)
-		std::vector<Polygon> polygons;
 	};
 }
 

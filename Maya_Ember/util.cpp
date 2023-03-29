@@ -48,18 +48,18 @@ bool ember::collinear(ivec3 a, ivec3 b, ivec3 c)
 }
 
 
-
-Plane ember::getPlaneFromPositions(ivec3 p1, ivec3 p2, ivec3 p3)
+Point ember::getPointFromVertexPos(ivec3 pos)
 {
-	ivec3 e1 = p1 - p2;
-	ivec3 e2 = p1 - p3;
+	// Build point as intersection of three axis planes
 
-	ivec3 nor = e1.cross(e2);
+	Plane xy{ 0, 0, 1, -pos.z };
+	Plane yz{ 1, 0, 0, -pos.x };
+	Plane zx{ 0, 1, 0, -pos.y };
 
-	return Plane::fromPositionNormal(p3, nor);
+	return intersect(xy, yz, zx);
 }
 
-Polygon ember::getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int meshId)
+Polygon ember::getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3 normal, int meshId)
 {
 	// Compute support plane
 	ivec3 p0 = posVec[0];
@@ -73,7 +73,7 @@ Polygon ember::getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int
 		ivec3 p1 = posVec[i];
 		ivec3 p2 = posVec[i + 1];
 		ivec3 p3 = p1 + normal; // p3 is outside support plane
-		bounds.push_back(getPlaneFromPositions(p1, p2, p3));
+		bounds.push_back(Plane::getPlaneFromTriangle(p1, p2, p3));
 	}
 
 	return Polygon{ meshId, support, bounds };

@@ -2,17 +2,20 @@
 
 #include "util.h"
 
+
 namespace ember
 {
+	class EMBER;
+
 	struct AABB 
 	{
-		Point min, max;
-		std::vector<Polygon> polygons;
+		//Point min, max;
+		ivec3 min, max;
 	};
 
 	struct RefPoint
 	{
-		Point point;
+		ivec3 pos;				
 		std::vector<int> WNV;
 	};
 
@@ -20,6 +23,7 @@ namespace ember
 	{
 		AABB bound;
 		RefPoint refPoint;
+		std::vector<Polygon*> polygons;
 
 		BSPNode* leftChild;
 		BSPNode* rightChild;
@@ -29,11 +33,17 @@ namespace ember
 	{
 	public:
 		BSPTree();
-		
-		void Split(BSPNode* node, Plane s);
+		~BSPTree();
 
+		void Build(BSPNode* rootNode);
 
-	public:
+		void Split(BSPNode* node);
+
+		RefPoint TraceRefPoint(BSPNode* node);
+
+	private:
 		BSPNode* root;
+		
+		EMBER* EMBER;
 	};
 }
