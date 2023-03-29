@@ -46,6 +46,62 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		status.perror("confirmDialog command failed");
 	}	
 
+
+	MSelectionList selectionList;
+	MGlobal::getActiveSelectionList(selectionList);
+
+	for (int i = 0; i < selectionList.length(); i++)
+	{
+		MDagPath dagPath;
+		MObject meshObject;
+
+		selectionList.getDagPath(i, dagPath, meshObject); // Get the first selected object
+		MFnMesh mesh(dagPath); // Create an MFnMesh object from the selected object
+
+		float minX = 100000000, minY = 100000000, minZ = 100000000, maxX = -100000000, maxY = -100000000, maxZ = -100000000;
+		MString meshName(dagPath.partialPathName());
+		MGlobal::displayInfo(meshName);
+
+		int numVertices = mesh.numVertices();
+		for (int j = 0; j < numVertices; j++) {
+			MPoint point;
+			mesh.getPoint(j, point); // Get the position of the ith vertex
+			char buffer[128];
+			sprintf_s(buffer, " Vertex %d: (%f, %f, %f)", j, point.x, point.y, point.z);
+			MGlobal::displayInfo(buffer);
+
+			if (point.x < minX)
+			{
+				minX = point.x;
+			}
+			if (point.y < minY)
+			{
+				minY = point.y;
+			}
+			if (point.z < minZ)
+			{
+				minZ = point.z;
+			}
+			if (point.x > maxX)
+			{
+				maxX = point.x;
+			}
+			if (point.y > maxY)
+			{
+				maxY = point.y;
+			}
+			if (point.z > maxZ)
+			{
+				maxZ = point.z;
+			}
+
+		}
+		char buffer[128];
+		sprintf_s(buffer, " AABB (%f, %f, %f), (%f, %f, %f)", minX, minY, minZ, maxX, maxY, maxZ);
+		MGlobal::displayInfo(buffer);
+
+	}
+
 	return status;
 }
 
