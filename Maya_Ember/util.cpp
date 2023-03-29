@@ -27,25 +27,25 @@ int ember::determiant3x3(
 	return t1 - t2 + t3;
 }
 
-bool ember::collinear(ivec3 a, ivec3 b, ivec3 c)
-{
-	// Heron's formula
-
-	ivec3 ea = a - b;
-	ivec3 eb = b - c;
-	ivec3 ec = c - a;
-
-	float la = ea.length();
-	float lb = eb.length();
-	float lc = ec.length();
-
-	float s = (la + lb + lc) * 0.5f;
-
-	if ((abs(s - la) < 0.0001) || (abs(s - lb) < 0.0001) || (abs(s - lc) < 0.0001))
-		return true;
-	else
-		return true;
-}
+//bool ember::collinear(ivec3 a, ivec3 b, ivec3 c)
+//{
+//	// Heron's formula
+//
+//	ivec3 ea = a - b;
+//	ivec3 eb = b - c;
+//	ivec3 ec = c - a;
+//
+//	float la = ea.length();
+//	float lb = eb.length();
+//	float lc = ec.length();
+//
+//	float s = (la + lb + lc) * 0.5f;
+//
+//	if ((abs(s - la) < 0.0001) || (abs(s - lb) < 0.0001) || (abs(s - lc) < 0.0001))
+//		return true;
+//	else
+//		return true;
+//}
 
 
 Point ember::getPointFromVertexPos(ivec3 pos)
@@ -57,6 +57,40 @@ Point ember::getPointFromVertexPos(ivec3 pos)
 	Plane zx{ 0, 1, 0, -pos.y };
 
 	return intersect(xy, yz, zx);
+}
+
+Segment ember::getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis)
+{
+	Line line;
+	Segment segment;
+
+	switch (axis)
+	{
+	case 0:	// X axis (Line planes are XY, XZ)
+		line.p1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 0, 1 });
+		line.p2 = Plane::fromPositionNormal(pos1, ivec3{ 0, 1, 0 });
+		segment.bound1 = Plane::fromPositionNormal(pos1, ivec3{ 1, 0, 0 });
+		segment.bound2 = Plane::fromPositionNormal(pos2, ivec3{ 1, 0, 0 });
+		break;
+	case 1:	// Y axis (Line planes are XY, YZ)
+		line.p1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 0, 1 });
+		line.p2 = Plane::fromPositionNormal(pos1, ivec3{ 1, 0, 0 });
+		segment.bound1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 1, 0 });
+		segment.bound2 = Plane::fromPositionNormal(pos2, ivec3{ 0, 1, 0 });
+		break;
+	case 2:	// Z axis (Line planes are XZ, YZ)
+		line.p1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 1, 0 });
+		line.p2 = Plane::fromPositionNormal(pos1, ivec3{ 1, 0, 0 });
+		segment.bound1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 0, 1 });
+		segment.bound2 = Plane::fromPositionNormal(pos2, ivec3{ 0, 0, 1 });
+		break;
+	default:
+		break;
+	}
+
+	segment.line = line;
+
+	return segment;
 }
 
 Polygon ember::getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3 normal, int meshId)

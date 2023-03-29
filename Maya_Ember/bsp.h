@@ -39,11 +39,13 @@ namespace ember
 
 		void Split(BSPNode* node);
 
-		RefPoint TraceRefPoint(BSPNode* node);
+		void LeafTask(BSPNode* leaf);
+
+		RefPoint TraceRefPoint(BSPNode* node, int axis);
 
 	private:
-		BSPNode* root;
-		
+		std::vector<BSPNode*> nodes; // Element 0 is root
+
 		EMBER* EMBER;
 	};
 }

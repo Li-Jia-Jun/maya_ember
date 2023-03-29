@@ -15,18 +15,19 @@ BSPTree::~BSPTree()
 
 void BSPTree::Build(BSPNode* rootNode)
 {
-	this->root = rootNode;
+	nodes.clear();
+	nodes.push_back(rootNode);
 
 	// Build tree recursively
-	std::vector<BSPNode*> nodes;
-	nodes.push_back(root);
+	std::vector<BSPNode*> toTraverse;
+	toTraverse.push_back(rootNode);
 	while (!nodes.empty())
 	{	
-		BSPNode* node = nodes.back();
-		nodes.pop_back();
+		BSPNode* node = toTraverse.back();
+		toTraverse.pop_back();
 
-		// Determine leaf node
-		if (node->polygons.size() <= 25)
+		// Leaf node determination
+		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
 			continue;
 
 		// Split
@@ -35,13 +36,31 @@ void BSPTree::Build(BSPNode* rootNode)
 		// Collect new nodes
 		if (node->leftChild != nullptr)
 		{
+			toTraverse.push_back(node->leftChild);
 			nodes.push_back(node->leftChild);
 		}
 		if (node->rightChild != nullptr)
 		{
+			toTraverse.push_back(node->rightChild);
 			nodes.push_back(node->rightChild);
 		}
 	}
+
+	// Handle leaf nodes
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		BSPNode* leaf = nodes[i];
+		if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
+		{
+			continue;
+		}
+		LeafTask(leaf);
+	}
+}
+
+void BSPTree::LeafTask(BSPNode* leaf)
+{
+
 }
 
 void BSPTree::Split(BSPNode* node)
@@ -191,15 +210,81 @@ void BSPTree::Split(BSPNode* node)
 		default:
 			break;
 		}
-		rightNode->refPoint = TraceRefPoint(node);
+		rightNode->refPoint = TraceRefPoint(node, axis);
 		node->rightChild = rightNode;
 	}
 }
 
-RefPoint BSPTree::TraceRefPoint(BSPNode* node)
+RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 {
-	// TODO::
-	RefPoint refPoint = node->refPoint;
-	return refPoint;
+	RefPoint refPoint;
+	refPoint.pos = node->rightChild->bound.min;
+	refPoint.WNV = node->refPoint.WNV;
 
+	// Early out, when no polygons on the left node
+	if (node->leftChild == nullptr)
+	{
+		return refPoint;
+	}
+
+	// Line from old ref point and new ref point
+	// It is assumed to be one of the axis
+	Segment traceSegment = getAxisSegmentFromPositions(node->refPoint.pos, refPoint.pos, axis);
+
+	// Trace refPoint through every polygon
+	std::vector<Polygon*> polygons = node->leftChild->polygons;
+	for (int i = 0; i < polygons.size(); i++)
+	{
+		Polygon* polygon = polygons[i];
+		
+		bool isValid = true;
+		
+		Point x = intersect(polygon->support, traceSegment.line.p1, traceSegment.line.p2);
+
+		// If intersection is unique
+		if (x.x4 == 0)
+		{
+			isValid = false;
+		}
+
+		// If intersection point is within segment
+		int c1 = classify(x, traceSegment.bound1);
+		int c2 = classify(x, traceSegment.bound2);
+		if (c1 > 0 || c2 > 0)
+		{
+			isValid = false;
+		}
+
+		// If the intersection point is inside polygon
+		for (int j = 0; isValid && j < polygon->bounds.size(); j++)
+		{
+			int c = classify(x, polygon->bounds[j]);
+			if (c > 0)
+			{
+				isValid = false;
+				break;
+			}
+		}
+
+		if (isValid)
+		{
+			ivec3 segmentDir = refPoint.pos - node->refPoint.pos;
+			
+			int sign = ivec3::dot(segmentDir, polygon->support.normal());
+			if (sign > 0)
+			{
+				// Trace is going out
+				int meshId = polygon->meshId;
+				refPoint.WNV[meshId] = refPoint.WNV[meshId] - 1;
+			}
+			else
+			{
+				// Trace is going in
+				int meshId = polygon->meshId;
+				refPoint.WNV[meshId] = refPoint.WNV[meshId] + 1;
+			}
+		}
+	}
+
+	return refPoint;
 }

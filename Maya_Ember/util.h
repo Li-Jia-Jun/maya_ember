@@ -4,6 +4,13 @@
 
 namespace ember
 {
+	// ======== Configure =============
+	
+#define LEAF_POLYGON_COUNT (25)
+
+	// ==================================
+
+
 	// ======== Basic Math =============
 
 	int multiply(Point x, Plane s);
@@ -25,6 +32,8 @@ namespace ember
 	Point intersect(Plane p, Plane q, Plane r);
 
 	Point getPointFromVertexPos(ivec3 pos);
+
+	Segment getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis);
 
 	Polygon getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3 normal, int meshId);
 
