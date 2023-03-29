@@ -11,6 +11,11 @@
 #include <maya/MString.h>
 #include <maya/MPxCommand.h>
 #include <maya/MSelectionList.h>
+#include <maya/MItMeshPolygon.h>
+
+#include "ember.h"
+#include <vector>
+
 // custom Maya command
 class helloMaya : public MPxCommand
 {
