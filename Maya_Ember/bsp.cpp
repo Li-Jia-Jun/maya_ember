@@ -1,7 +1,9 @@
 #include "bsp.h"
-#include "ember.h"
 
 using namespace ember;
+
+
+// ========== BSP ============
 
 BSPTree::BSPTree()
 {
@@ -96,70 +98,15 @@ void BSPTree::Split(BSPNode* node)
 	std::vector<Polygon*> leftPolygons;
 	std::vector<Polygon*> rightPolygons;
 	for (int i = 0; i < node->polygons.size(); i++)
-	{
-		Polygon* polygon = node->polygons[i];
-		
-		std::vector<Plane> leftEdgePlanes;
-		std::vector<Plane> rightEdgePlanes;
-		bool hasSplit = false;
-
-		// Divide edge by split plane
-		int boundSize = polygon->bounds.size();
-		for (int j = 0; j < boundSize; j++)
+	{	
+		auto pairs = splitPolygon(node->polygons[i], splitPlane);
+		if (pairs.first != nullptr)
 		{
-			Plane edgePlane = polygon->bounds[j];
-			Plane bound1 = polygon->bounds[(j - 1 + boundSize) % boundSize];
-			Plane bound2 = polygon->bounds[(j + 1) % boundSize];
-	
-			int c1 = classify(intersect(polygon->support, edgePlane, bound1), splitPlane);
-			int c2 = classify(intersect(polygon->support, edgePlane, bound2), splitPlane);
-
-			if (c1 <= 0 && c2 <= 0)		
-			{
-				// Edge to left (no positive values, including all zero)
-				leftEdgePlanes.push_back(edgePlane);
-			}
-			else if (c1 >= 0 && c2 >= 0)	
-			{
-				// Edge to right (all positive values)
-				rightEdgePlanes.push_back(edgePlane);
-			}
-			else
-			{
-				// Split and add edge to both sides
-				leftEdgePlanes.push_back(edgePlane);
-				
-				if (!hasSplit)
-				{
-					leftEdgePlanes.push_back(splitPlane);
-					rightEdgePlanes.push_back(splitPlane);
-					hasSplit = true;
-				}
-
-				rightEdgePlanes.push_back(edgePlane);
-			}
+			leftPolygons.push_back(pairs.first);
 		}
-
-		// Collect divided edges to build polygons
-		if (!leftEdgePlanes.empty())
+		if (pairs.second != nullptr)
 		{
-			Polygon* newPolygon = new Polygon();
-			newPolygon->meshId = polygon->meshId;
-			newPolygon->bounds = leftEdgePlanes;
-			newPolygon->support = polygon->support;
-
-			// Don't forget to store new polygon to EMBER
-			EMBER->AddPolygon(newPolygon); 
-		}
-		if (!rightEdgePlanes.empty())
-		{
-			Polygon* newPolygon = new Polygon();
-			newPolygon->meshId = polygon->meshId;
-			newPolygon->bounds = rightEdgePlanes;
-			newPolygon->support = polygon->support;
-
-			// Don't forget to store new polygon to EMBER
-			EMBER->AddPolygon(newPolygon);
+			rightPolygons.push_back(pairs.second);
 		}
 	}
 
@@ -287,4 +234,69 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 	}
 
 	return refPoint;
+}
+
+
+// ========== Local BSP ============
+
+LocalBSPTree::LocalBSPTree()
+{
+}
+
+LocalBSPTree::~LocalBSPTree()
+{
+}
+
+void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s)
+{
+	if (node == nullptr)
+	{
+		return;
+	}
+
+	bool isLeaf = node->leftChild == nullptr && node->rightChild == nullptr;
+
+	if(isLeaf)
+	{
+		auto pairs = splitPolygon(polygon, s);
+		node->plane = s; // Current node becomes inner
+		
+		LocalBSPNode* leftNode = new LocalBSPNode();
+		LocalBSPNode* rightNode = new LocalBSPNode();
+		leftNode->polygon = pairs.first;
+		rightNode->polygon = pairs.second;
+
+		node->leftChild = leftNode;
+		node->rightChild = rightNode;
+	}
+	else
+	{
+		int c0 = classify(v0, node->plane);
+		int c1 = classify(v1, node->plane);
+
+		if (c0 == c1 && c0 == 0) // Segment lies on the splitting plane
+		{
+			return; 
+		}
+		else if (c0 <= 0 && c1 <= 0)
+		{
+			AddSegment(node->leftChild, v0, v1, s);
+		}
+		else if (c0 >= 0 && c1 >= 0)
+		{
+			AddSegment(node->rightChild, v0, v1, s);
+		}
+		else if (c0 < 0 && c1 > 0)
+		{
+			Point v = intersect(s, node->plane, polygon->support);
+			AddSegment(node->leftChild, v0, v, s);
+			AddSegment(node->rightChild, v, v1, s);
+		}
+		else if (c0 > 0 && c1 < 0)
+		{
+			Point v = intersect(s, node->plane, polygon->support);
+			AddSegment(node->leftChild, v, v1, s);
+			AddSegment(node->rightChild, v0, v, s);
+		}
+	}
 }

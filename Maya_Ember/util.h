@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry.h"
+#include <utility>
 
 namespace ember
 {
@@ -24,12 +25,10 @@ namespace ember
 
 	//bool collinear(ivec3 a, ivec3 b, ivec3 c);
 
-	// ==================================
-
 
 	// ======== Mesh Operation =============
 	
-	Point intersect(Plane p, Plane q, Plane r);
+	
 
 	Point getPointFromVertexPos(ivec3 pos);
 
@@ -37,8 +36,10 @@ namespace ember
 
 	Polygon getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int meshId);
 
-	int classify(Point x, Plane s);
+	std::pair<Polygon*, Polygon*> splitPolygon(Polygon* polygon, Plane splitPlane);
 
-	// ================================== 
+	Point intersect(Plane p, Plane q, Plane r);
+
+	int classify(Point x, Plane s);
 }
 

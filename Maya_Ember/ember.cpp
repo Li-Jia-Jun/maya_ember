@@ -35,8 +35,3 @@ void EMBER::BuildBSPTree()
 	// Build BSP tree based on root node
 	bspTree.Build(root);
 }
-
-void EMBER::AddPolygon(Polygon* p)
-{
-	polygons.push_back(p);
-}

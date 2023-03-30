@@ -15,11 +15,9 @@ namespace ember
 
 		void BuildBSPTree();
 
-		void AddPolygon(Polygon* p);
-
 	private:
-		int meshId;						// Incremental count of meshes
-		std::vector<Polygon*> polygons;
+		int meshId;							// Incremental count of meshes
+		std::vector<Polygon*> polygons;		// Initial polygon soup
 		AABB initBound;
 		BSPTree bspTree;
 	};

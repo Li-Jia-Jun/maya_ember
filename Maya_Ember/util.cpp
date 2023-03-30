@@ -114,6 +114,71 @@ Polygon ember::getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int
 	return Polygon{ meshId, support, bounds };
 }
 
+std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitPlane)
+{
+	std::vector<Plane> leftEdgePlanes;
+	std::vector<Plane> rightEdgePlanes;
+	bool hasSplit = false;
+
+	// Divide edge by split plane
+	int boundSize = polygon->bounds.size();
+	for (int j = 0; j < boundSize; j++)
+	{
+		Plane edgePlane = polygon->bounds[j];
+		Plane bound1 = polygon->bounds[(j - 1 + boundSize) % boundSize];
+		Plane bound2 = polygon->bounds[(j + 1) % boundSize];
+
+		int c1 = classify(intersect(polygon->support, edgePlane, bound1), splitPlane);
+		int c2 = classify(intersect(polygon->support, edgePlane, bound2), splitPlane);
+
+		if (c1 <= 0 && c2 <= 0)
+		{
+			// Edge to left (no positive values, including all zero)
+			leftEdgePlanes.push_back(edgePlane);
+		}
+		else if (c1 >= 0 && c2 >= 0)
+		{
+			// Edge to right (all positive values)
+			rightEdgePlanes.push_back(edgePlane);
+		}
+		else
+		{
+			// Split and add edge to both sides
+			leftEdgePlanes.push_back(edgePlane);
+
+			if (!hasSplit)
+			{
+				leftEdgePlanes.push_back(splitPlane);
+				rightEdgePlanes.push_back(splitPlane);
+				hasSplit = true;
+			}
+
+			rightEdgePlanes.push_back(edgePlane);
+		}
+	}
+
+	// Collect divided edges to build polygons
+	Polygon* leftPolygon = nullptr;
+	Polygon* rightPolygon = nullptr;
+	if (!leftEdgePlanes.empty())
+	{
+		leftPolygon = new Polygon();
+		leftPolygon->meshId = polygon->meshId;
+		leftPolygon->bounds = leftEdgePlanes;
+		leftPolygon->support = polygon->support;
+	}
+	if (!rightEdgePlanes.empty())
+	{
+		rightPolygon = new Polygon();
+		rightPolygon->meshId = polygon->meshId;
+		rightPolygon->bounds = rightEdgePlanes;
+		rightPolygon->support = polygon->support;
+	}
+
+	return std::make_pair(leftPolygon, rightPolygon);
+}
+
+
 Point ember::intersect(Plane p, Plane q, Plane r)
 {
 	int x1 = determiant3x3(
