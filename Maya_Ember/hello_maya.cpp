@@ -135,7 +135,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		}
 
 		// Load the data into an ember
-		ember.ReadMeshDataFromTriangles(vertices, normals);
+		ember.ReadMeshData(vertices, normals);
 		ember::AABB bound;
 		bound.max.x = maxX * BIG_NUM;
 		bound.max.y = maxY * BIG_NUM;

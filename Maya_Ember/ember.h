@@ -9,7 +9,7 @@ namespace ember
 	public:
 		EMBER();
 
-		void ReadMeshDataFromTriangles(std::vector<std::vector<ivec3>> &vertices, std::vector<ivec3> &normals);
+		void ReadMeshData(std::vector<std::vector<ivec3>>& vertices, std::vector<ivec3>& normals);
 
 		void SetInitBound(AABB bound);
 

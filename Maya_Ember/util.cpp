@@ -93,7 +93,7 @@ Segment ember::getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis)
 	return segment;
 }
 
-Polygon ember::getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3 normal, int meshId)
+Polygon ember::getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int meshId)
 {
 	// Compute support plane
 	ivec3 p0 = posVec[0];
@@ -102,10 +102,11 @@ Polygon ember::getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3
 	// Compute bound plane for each edge
 	// (assume that bound plane is perpendicular to support plane)
 	std::vector<Plane> bounds;
-	for (int i = 0; i < posVec.size() - 1; i++)
+	int count = posVec.size();
+	for (int i = 0; i < count; i++)
 	{
 		ivec3 p1 = posVec[i];
-		ivec3 p2 = posVec[i + 1];
+		ivec3 p2 = posVec[(i + 1) % count];
 		ivec3 p3 = p1 + normal; // p3 is outside support plane
 		bounds.push_back(Plane::getPlaneFromTriangle(p1, p2, p3));
 	}

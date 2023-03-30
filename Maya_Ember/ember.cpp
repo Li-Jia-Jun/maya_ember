@@ -6,15 +6,12 @@ EMBER::EMBER()
 {
 }
 
-void EMBER::ReadMeshDataFromTriangles(std::vector<std::vector<ivec3>> &vertices, std::vector<ivec3> &normals)
+void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<ivec3> &normals)
 {
-	// Add all triangles to polygon soup
 	for (int i = 0; i < vertices.size(); i++)
 	{
-		std::vector<ivec3> pos{vertices[i][0], vertices[i][1], vertices[i][2]}; 
-		polygons.push_back(new Polygon(getPlaneBasedPolygonFromTriangle(pos, normals[i], meshId)));
+		polygons.push_back(new Polygon(getPlaneBasedPolygon(vertices[i], normals[i], meshId)));
 	}
-
 	meshId++;
 }
 

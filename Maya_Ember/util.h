@@ -22,7 +22,7 @@ namespace ember
 		int d, int e, int f,
 		int g, int h, int i);
 
-	bool collinear(ivec3 a, ivec3 b, ivec3 c);
+	//bool collinear(ivec3 a, ivec3 b, ivec3 c);
 
 	// ==================================
 
@@ -35,7 +35,7 @@ namespace ember
 
 	Segment getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis);
 
-	Polygon getPlaneBasedPolygonFromTriangle(std::vector<ivec3> posVec, ivec3 normal, int meshId);
+	Polygon getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int meshId);
 
 	int classify(Point x, Plane s);
 
