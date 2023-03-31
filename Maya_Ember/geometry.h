@@ -31,10 +31,15 @@ namespace ember
 			return ivec3{ x * b.x, y * b.y, z * b.z };
 		}
 
-		//float length()
-		//{
-		//	return sqrt(x * x + y * y + z * z);
-		//}
+		bool operator==(const ivec3& b)
+		{
+			return x == b.x && y == b.y && z == b.z;
+		}
+
+		bool operator!=(const ivec3& b)
+		{
+			return !((*this) == b);
+		}
 
 		static ivec3 cross(const ivec3& a, const ivec3& b)
 		{
@@ -53,8 +58,12 @@ namespace ember
 	struct Point
 	{
 		// Homogenerous coordinate (obtained from intersect())
-		// For points that
 		int x1, x2, x3, x4;
+
+		bool isValid()
+		{
+			return x4 != 0;
+		}
 
 		ivec3 getPosition()
 		{
@@ -68,7 +77,8 @@ namespace ember
 		// ax + by + cz + d = 0
 		int a, b, c, d;
 
-		ivec3 normal()
+		// Get non-normalized normal
+		ivec3 getNormal()
 		{
 			return { a, b, c };
 		}
@@ -106,6 +116,37 @@ namespace ember
 		int meshId;
 		Plane support;
 		std::vector<Plane> bounds;
+
+		Segment getSegment(int index)
+		{
+			int edgeCount = bounds.size();
+			Plane plane1 = bounds[(index - 1 + edgeCount) % edgeCount];
+			Plane plane2 = bounds[index];
+			Plane plane3 = bounds[(index + 1) % edgeCount];
+
+			return Segment{ Line{support, plane2}, plane1, plane3 };
+		}
+
+		static Polygon* fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
+		{
+			// Compute support plane
+			ivec3 p0 = posVec[0];
+			Plane support = Plane::fromPositionNormal(p0, normal);
+
+			// Compute bound plane for each edge
+			// (assume that bound plane is perpendicular to support plane)
+			std::vector<Plane> bounds;
+			int count = posVec.size();
+			for (int i = 0; i < count; i++)
+			{
+				ivec3 p1 = posVec[i];
+				ivec3 p2 = posVec[(i + 1) % count];
+				ivec3 p3 = p1 + normal; // p3 is outside support plane
+				bounds.push_back(Plane::getPlaneFromTriangle(p1, p2, p3));
+			}
+
+			return new Polygon{ meshId, support, bounds };
+		}
 	};
 
 	struct Mesh

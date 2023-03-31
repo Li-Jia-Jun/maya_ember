@@ -6,6 +6,8 @@
 namespace ember
 {
 	class EMBER;
+	class BSPTree;
+	class LocalBSPTree;
 
 	struct AABB 
 	{
@@ -27,6 +29,7 @@ namespace ember
 		AABB bound;
 		RefPoint refPoint;
 		std::vector<Polygon*> polygons;
+		std::vector<LocalBSPTree*> localTrees;
 
 		BSPNode* leftChild;
 		BSPNode* rightChild;
@@ -43,10 +46,8 @@ namespace ember
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
 
 	private:
-		std::vector<BSPNode*> nodes; // Element 0 is root
+		std::vector<BSPNode*> nodes;				// Element 0 is root node
 	};
-
-
 
 	// Local BSP for leaf node
 
@@ -54,21 +55,22 @@ namespace ember
 	{
 		Polygon* polygon;	// For leaf node
 		Plane plane;		// For inner node
+		bool disable;
 
-		LocalBSPNode* leftChild;
-		LocalBSPNode* rightChild;
+		LocalBSPNode* leftChild = nullptr;
+		LocalBSPNode* rightChild = nullptr;
 	};
 
 	class LocalBSPTree
 	{
 	public:
-		LocalBSPTree();
+		LocalBSPTree(int index, BSPNode* leaf);
 		~LocalBSPTree();
-
-		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s);
+		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);
+		std::vector<Segment> IntersectWithPolygon(Polygon* p2);
 
 	private:
-		std::vector<LocalBSPNode*> nodes;
-		Polygon* polygon;
+		std::vector<LocalBSPNode*> nodes;		// Element 0 is root node
+		int mark;								
 	};
 }

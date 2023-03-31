@@ -56,13 +56,19 @@ void BSPTree::Build(BSPNode* rootNode)
 		{
 			continue;
 		}
+
 		LeafTask(leaf);
 	}
 }
 
 void BSPTree::LeafTask(BSPNode* leaf)
 {
-
+	// Create local BSP tree for every polygon
+	for (int i = 0; i < leaf->polygons.size(); i++)
+	{
+		LocalBSPTree* localTree = new LocalBSPTree(i, leaf);
+		leaf->localTrees.push_back(localTree);
+	}
 }
 
 void BSPTree::Split(BSPNode* node)
@@ -143,6 +149,8 @@ void BSPTree::Split(BSPNode* node)
 	{
 		BSPNode* rightNode = new BSPNode();
 		rightNode->polygons = rightPolygons;
+
+		ivec3 adjust = ivec3{ AABB_ADJUST, AABB_ADJUST, AABB_ADJUST };
 		switch (axis)
 		{
 		case 0:
@@ -157,6 +165,10 @@ void BSPTree::Split(BSPNode* node)
 		default:
 			break;
 		}
+
+		// Apply adjustment to guarantee new ref point will not be on any polygon surface
+		rightNode->bound.min = rightNode->bound.min - adjust; 
+
 		rightNode->refPoint = TraceRefPoint(node, axis);
 		node->rightChild = rightNode;
 	}
@@ -182,52 +194,23 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 	std::vector<Polygon*> polygons = node->leftChild->polygons;
 	for (int i = 0; i < polygons.size(); i++)
 	{
-		Polygon* polygon = polygons[i];
-		
-		bool isValid = true;
-		
-		Point x = intersect(polygon->support, traceSegment.line.p1, traceSegment.line.p2);
+		bool hasIntersect = intersectSegmentPolygon(polygons[i], traceSegment).x4 != 0;
 
-		// If intersection is unique
-		if (x.x4 == 0)
-		{
-			isValid = false;
-		}
-
-		// If intersection point is within segment
-		int c1 = classify(x, traceSegment.bound1);
-		int c2 = classify(x, traceSegment.bound2);
-		if (c1 > 0 || c2 > 0)
-		{
-			isValid = false;
-		}
-
-		// If the intersection point is inside polygon
-		for (int j = 0; isValid && j < polygon->bounds.size(); j++)
-		{
-			int c = classify(x, polygon->bounds[j]);
-			if (c > 0)
-			{
-				isValid = false;
-				break;
-			}
-		}
-
-		if (isValid)
+		if (hasIntersect)
 		{
 			ivec3 segmentDir = refPoint.pos - node->refPoint.pos;
 			
-			int sign = ivec3::dot(segmentDir, polygon->support.normal());
+			int sign = ivec3::dot(segmentDir, polygons[i]->support.getNormal());
 			if (sign > 0)
 			{
 				// Trace is going out
-				int meshId = polygon->meshId;
+				int meshId = polygons[i]->meshId;
 				refPoint.WNV[meshId] = refPoint.WNV[meshId] - 1;
 			}
 			else
 			{
 				// Trace is going in
-				int meshId = polygon->meshId;
+				int meshId = polygons[i]->meshId;
 				refPoint.WNV[meshId] = refPoint.WNV[meshId] + 1;
 			}
 		}
@@ -239,23 +222,48 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 
 // ========== Local BSP ============
 
-LocalBSPTree::LocalBSPTree()
+LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 {
+	LocalBSPNode* root = new LocalBSPNode();
+	root->polygon = leaf->polygons[mark];
+	nodes.push_back(root);
+	mark = index; // The mark is its index in the leaf BSP node
+
+	// Add segment by all other polygons in leaf node
+	for (int i = 0; i < leaf->polygons.size(); i++)
+	{
+		if (i == mark)
+		{
+			continue;
+		}
+
+		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
+		
+		for (int j = 0; j < segments.size(); j++)
+		{
+			Point v0 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound1);
+			Point v1 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound2);
+			Plane s = leaf->polygons[i]->support;
+			
+			AddSegment(root, v0, v1, s, i);
+		}
+	}
 }
 
 LocalBSPTree::~LocalBSPTree()
 {
 }
 
-void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s)
+void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark)
 {
 	if (node == nullptr)
 	{
 		return;
 	}
 
-	bool isLeaf = node->leftChild == nullptr && node->rightChild == nullptr;
+	Polygon* polygon = nodes[0]->polygon;
 
+	bool isLeaf = node->leftChild == nullptr && node->rightChild == nullptr;
 	if(isLeaf)
 	{
 		auto pairs = splitPolygon(polygon, s);
@@ -266,8 +274,18 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s)
 		leftNode->polygon = pairs.first;
 		rightNode->polygon = pairs.second;
 
+		// Mark the node as not used in final output
+		if (node->disable || otherMark < mark)
+		{
+			leftNode->disable = true;
+			leftNode->disable = true;
+		}
+
 		node->leftChild = leftNode;
 		node->rightChild = rightNode;
+
+		nodes.push_back(leftNode);
+		nodes.push_back(rightNode);
 	}
 	else
 	{
@@ -280,23 +298,94 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s)
 		}
 		else if (c0 <= 0 && c1 <= 0)
 		{
-			AddSegment(node->leftChild, v0, v1, s);
+			AddSegment(node->leftChild, v0, v1, s, otherMark);
 		}
 		else if (c0 >= 0 && c1 >= 0)
 		{
-			AddSegment(node->rightChild, v0, v1, s);
+			AddSegment(node->rightChild, v0, v1, s, otherMark);
 		}
 		else if (c0 < 0 && c1 > 0)
 		{
 			Point v = intersect(s, node->plane, polygon->support);
-			AddSegment(node->leftChild, v0, v, s);
-			AddSegment(node->rightChild, v, v1, s);
+			AddSegment(node->leftChild, v0, v, s, otherMark);
+			AddSegment(node->rightChild, v, v1, s, otherMark);
 		}
 		else if (c0 > 0 && c1 < 0)
 		{
 			Point v = intersect(s, node->plane, polygon->support);
-			AddSegment(node->leftChild, v, v1, s);
-			AddSegment(node->rightChild, v0, v, s);
+			AddSegment(node->leftChild, v, v1, s, otherMark);
+			AddSegment(node->rightChild, v0, v, s, otherMark);
 		}
 	}
+}
+
+std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
+{
+	Polygon* p1 = nodes[0]->polygon;
+	std::vector<Segment> segments;
+
+	// Check how many distinct points p1 will intersect with p2
+	std::vector<Point> points;
+	for (int i = 0; i < p1->bounds.size(); i++)
+	{
+		Point point = intersectSegmentPolygon(p2, p1->getSegment(i));
+
+		if (!point.isValid())
+			continue;
+
+		if (points.empty())
+		{
+			points.push_back(point);
+		}
+		else
+		{
+			ivec3 pos1 = points[0].getPosition();
+			ivec3 pos2 = point.getPosition();
+			if (pos1 != pos2)
+			{
+				points.push_back(point);
+				break;  // 2 intersect points are sufficient to distinguish 
+						// between intersecting on a point or an overlapping area
+			}
+		}
+	}
+
+	ivec3 nor1 = p1->support.getNormal();
+	ivec3 nor2 = p2->support.getNormal();
+	bool planeParallel = isDirectionEqual(nor1, nor2);
+	if (planeParallel)
+	{
+		if (points.size() >= 2)
+		{
+			// C4: intersection forms a polygon (collect all p2's edges)		
+			for (int i = 0; i < p2->bounds.size(); i++)
+			{
+				segments.push_back(p2->getSegment(i));
+			}
+		}
+		else
+		{
+			// C1 or C2: no intersection or degenerate segment (ignore)
+		}
+	}
+	else
+	{
+		if (points.size() >= 2)
+		{
+			// C3: forms a non-degenerate segment (add this segment)
+			Segment segment;
+			segment.line = Line{ p1->support, p2->support };
+			ivec3 nor = ivec3::cross(p1->support.getNormal(), p2->support.getNormal());
+			segment.bound1 = Plane::fromPositionNormal(points[0].getPosition(), nor);
+			segment.bound2 = Plane::fromPositionNormal(points[1].getPosition(), nor);
+			
+			segments.push_back(segment);
+		}
+		else
+		{
+			// C1 or C2: no intersection or degenerate segment (ignore)
+		}
+	}
+
+	return segments;
 }

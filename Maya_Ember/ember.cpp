@@ -10,7 +10,7 @@ void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<
 {
 	for (int i = 0; i < vertices.size(); i++)
 	{
-		polygons.push_back(new Polygon(getPlaneBasedPolygon(vertices[i], normals[i], meshId)));
+		polygons.push_back(Polygon::fromPositionNormal(vertices[i], normals[i], meshId));
 	}
 	meshId++;
 }

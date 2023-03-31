@@ -27,6 +27,12 @@ int ember::determiant3x3(
 	return t1 - t2 + t3;
 }
 
+bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
+{
+	ivec3 crossProduct = ivec3::cross(dir1, dir2);
+	return crossProduct.x == 0 && crossProduct.y == 0 && crossProduct.z == 0;
+}
+
 //bool ember::collinear(ivec3 a, ivec3 b, ivec3 c)
 //{
 //	// Heron's formula
@@ -48,14 +54,12 @@ int ember::determiant3x3(
 //}
 
 
-Point ember::getPointFromVertexPos(ivec3 pos)
+Point ember::getPointfromPosition(ivec3 pos)
 {
 	// Build point as intersection of three axis planes
-
 	Plane xy{ 0, 0, 1, -pos.z };
 	Plane yz{ 1, 0, 0, -pos.x };
 	Plane zx{ 0, 1, 0, -pos.y };
-
 	return intersect(xy, yz, zx);
 }
 
@@ -91,27 +95,6 @@ Segment ember::getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis)
 	segment.line = line;
 
 	return segment;
-}
-
-Polygon ember::getPlaneBasedPolygon(std::vector<ivec3> posVec, ivec3 normal, int meshId)
-{
-	// Compute support plane
-	ivec3 p0 = posVec[0];
-	Plane support = Plane::fromPositionNormal(p0, normal);
-
-	// Compute bound plane for each edge
-	// (assume that bound plane is perpendicular to support plane)
-	std::vector<Plane> bounds;
-	int count = posVec.size();
-	for (int i = 0; i < count; i++)
-	{
-		ivec3 p1 = posVec[i];
-		ivec3 p2 = posVec[(i + 1) % count];
-		ivec3 p3 = p1 + normal; // p3 is outside support plane
-		bounds.push_back(Plane::getPlaneFromTriangle(p1, p2, p3));
-	}
-
-	return Polygon{ meshId, support, bounds };
 }
 
 std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitPlane)
@@ -178,6 +161,38 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	return std::make_pair(leftPolygon, rightPolygon);
 }
 
+Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
+{
+	Point x = intersect(polygon->support, segment.line.p1, segment.line.p2);
+
+	// If intersection is not unique
+	if (x.x4 == 0)
+	{
+		return x;
+	}
+
+	// If intersection point is within segment
+	int c1 = classify(x, segment.bound1);
+	int c2 = classify(x, segment.bound2);
+	if (c1 >= 0 || c2 >= 0) // Points right on the segment end are considered 'exterior'
+	{
+		x.x4 = 0; // set x4 to 0 to indicate the result is invalid
+		return x;
+	}
+
+	// If the intersection point is inside polygon
+	for (int j = 0; j < polygon->bounds.size(); j++)
+	{
+		int c = classify(x, polygon->bounds[j]);
+		if (c >= 0)	// Points on polygon edge are also considered 'exterior'
+		{
+			x.x4 = 0;
+			return x;
+		}
+	}
+
+	return x;
+}
 
 Point ember::intersect(Plane p, Plane q, Plane r)
 {
@@ -211,4 +226,3 @@ int ember::classify(Point x, Plane s)
 	// Return 0 means x on s	
 	return sign(multiply(x, s)) * sign(x.x4);
 }
-
