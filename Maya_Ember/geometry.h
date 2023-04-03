@@ -89,7 +89,7 @@ namespace ember
 				-(nor.x * p.x + nor.y * p.y + nor.z * p.z)};
 		}
 
-		static Plane getPlaneFromTriangle(ivec3 p1, ivec3 p2, ivec3 p3)
+		static Plane fromTriangle(ivec3 p1, ivec3 p2, ivec3 p3)
 		{
 			ivec3 e1 = p1 - p2;
 			ivec3 e2 = p1 - p3;
@@ -108,7 +108,7 @@ namespace ember
 	struct Segment
 	{
 		Line line;
-		Plane bound1, bound2;
+		Plane bound1, bound2; // Start from bound1 and end at bound2
 	};
 
 	struct Polygon
@@ -116,16 +116,6 @@ namespace ember
 		int meshId;
 		Plane support;
 		std::vector<Plane> bounds;
-
-		Segment getSegment(int index)
-		{
-			int edgeCount = bounds.size();
-			Plane plane1 = bounds[(index - 1 + edgeCount) % edgeCount];
-			Plane plane2 = bounds[index];
-			Plane plane3 = bounds[(index + 1) % edgeCount];
-
-			return Segment{ Line{support, plane2}, plane1, plane3 };
-		}
 
 		static Polygon* fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
 		{
@@ -142,16 +132,11 @@ namespace ember
 				ivec3 p1 = posVec[i];
 				ivec3 p2 = posVec[(i + 1) % count];
 				ivec3 p3 = p1 + normal; // p3 is outside support plane
-				bounds.push_back(Plane::getPlaneFromTriangle(p1, p2, p3));
+				bounds.push_back(Plane::fromTriangle(p1, p2, p3));
 			}
 
 			return new Polygon{ meshId, support, bounds };
 		}
-	};
-
-	struct Mesh
-	{
-		int id; // Id also indicates its index in WNTV(delta w)
 	};
 }
 

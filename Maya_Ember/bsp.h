@@ -22,7 +22,7 @@ namespace ember
 	};
 
 
-	// BSP for AABB subdivision
+	// Global BSP for AABB subdivision
 
 	struct BSPNode
 	{
@@ -37,19 +37,25 @@ namespace ember
 
 	class BSPTree
 	{
-	public: 
+	public:
 		BSPTree();
 		~BSPTree();
 		void Build(BSPNode* rootNode);
 		void Split(BSPNode* node);
-		void LeafTask(BSPNode* leaf);
+		void BuildLocalBSP(BSPNode* leaf);
+		void FaceClassification(BSPNode* leaf);
+		Point FindPolygonInteriorSimple(Polygon* polygon);
+		Point FindPolygonInteriorComplex(Polygon* polygon);
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
-
+		std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
+		std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
+		
 	private:
 		std::vector<BSPNode*> nodes;				// Element 0 is root node
+		std::vector<Polygon*> outputPolygons;		// The final output
 	};
 
-	// Local BSP for leaf node
+	// Local BSP for leaf node of the Global BSP
 
 	struct LocalBSPNode
 	{
@@ -66,11 +72,12 @@ namespace ember
 	public:
 		LocalBSPTree(int index, BSPNode* leaf);
 		~LocalBSPTree();
-		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);
+		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);	
+		void CollectPolygons(std::vector<Polygon*>& container);
 		std::vector<Segment> IntersectWithPolygon(Polygon* p2);
 
 	private:
 		std::vector<LocalBSPNode*> nodes;		// Element 0 is root node
-		int mark;								
+		int mark;
 	};
 }

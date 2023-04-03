@@ -32,13 +32,29 @@ namespace ember
 
 	// ======== Mesh Operation =============
 
+	bool isPlaneEqual(Plane p1, Plane p2);
+
+	bool isPointInPolygon(Polygon* polygon, Point point);
+
+	int getCloestAxis(ivec3 dir);
+
+	Line getAxisLine(ivec3 pos, int axis);
 
 	Point getPointfromPosition(ivec3 pos);
+
+	Point getPolygonPoint(Polygon* polygon, int index);
+
+	Segment getPolygonSegment(Polygon* polygon, int index);
+
+	/// <summary>
+	/// Get polygon center of mass and rounded to integer coordinate
+	/// </summary>
+	ivec3 getRoundedPolygonCOM(Polygon* polygon);
 
 	/// <summary>
 	/// Create a segment along the given axis direction
 	/// </summary>
-	Segment getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis);
+	Segment getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis);
 
 	/// <summary>
 	/// Split the polygon with a plane and create two new polygons
@@ -48,11 +64,18 @@ namespace ember
 	std::pair<Polygon*, Polygon*> splitPolygon(Polygon* polygon, Plane splitPlane);
 
 	/// <summary>
-	/// Find exclusive intersection between segmeng and polygon
+	/// Find exclusive intersection between line and polygon
 	/// The result can be a point or no intersection (indicated by point.x4 == 0)
-	///  - exclusive means points just on the edges or end points are not considered valid
+	///  - exclusive means points just on the edges are not considered valid
+	/// </summary>
+	Point intersectLinePolygon(Polygon* polygon, Line line);
+
+	/// <summary>
+	/// Find exclusive intersection between segment and polygon
+	///  - points on the end point of the segment are not considered valid
 	/// </summary>
 	Point intersectSegmentPolygon(Polygon* polygon, Segment segment);
+	
 
 	Point intersect(Plane p, Plane q, Plane r);
 

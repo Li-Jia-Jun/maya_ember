@@ -1,4 +1,6 @@
 #include "bsp.h"
+#include <cstdlib>
+#include <time.h>
 
 using namespace ember;
 
@@ -20,7 +22,7 @@ void BSPTree::Build(BSPNode* rootNode)
 	nodes.clear();
 	nodes.push_back(rootNode);
 
-	// Build tree recursively
+	// Create tree nodes recursively
 	std::vector<BSPNode*> toTraverse;
 	toTraverse.push_back(rootNode);
 	while (!nodes.empty())
@@ -32,7 +34,7 @@ void BSPTree::Build(BSPNode* rootNode)
 		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
 			continue;
 
-		// Split
+		// Split AABB
 		Split(node);
 
 		// Collect new nodes
@@ -48,7 +50,7 @@ void BSPTree::Build(BSPNode* rootNode)
 		}
 	}
 
-	// Handle leaf nodes
+	// Handle leaf node
 	for (int i = 0; i < nodes.size(); i++)
 	{
 		BSPNode* leaf = nodes[i];
@@ -57,16 +59,110 @@ void BSPTree::Build(BSPNode* rootNode)
 			continue;
 		}
 
-		LeafTask(leaf);
+		BuildLocalBSP(leaf);
+		FaceClassification(leaf);
 	}
 }
 
-void BSPTree::LeafTask(BSPNode* leaf)
+void BSPTree::FaceClassification(BSPNode* leaf)
 {
-	// Create local BSP tree for every polygon
-	for (int i = 0; i < leaf->polygons.size(); i++)
+	// 1. Gather all the polygons from leaf nodes of all local bsp trees
+	// They are candidates for the final ouput polygons
+	std::vector<Polygon*> candidates;
+	for (int i = 0; i < leaf->localTrees.size(); i++)
 	{
-		LocalBSPTree* localTree = new LocalBSPTree(i, leaf);
+		leaf->localTrees[i]->CollectPolygons(candidates);
+	}
+	
+	// 2. Compute WNV for candidate polygons
+	for (int i = 0; i < candidates.size(); i++)
+	{
+		Polygon* polygon = candidates[i];
+
+		// 2. Pick a point inside polygon
+		Point x = FindPolygonInteriorSimple(polygon);
+		if (x.x4 == 0)
+		{
+			x = FindPolygonInteriorComplex(polygon);
+		}
+
+		// Find path from x to ref point
+		std::vector<Segment> segments = FindPathBackToRefPoint(leaf->refPoint, x);
+		
+		// Update WNV
+		std::vector<int> WNV = leaf->refPoint.WNV;
+		for (int j = 0; j < segments.size(); j++)
+		{
+			for (int k = 0; k < candidates.size(); k++)
+			{
+				if (i == k)
+					continue;
+
+				WNV = TraceSegment(candidates[k], segments[j], WNV);
+			}
+		}
+
+		// Temporary method to map WNV (assumes we only have 2 mesh for now)
+		if (WNV[0] != 0 && WNV[1] == 0)
+		{
+			outputPolygons.push_back(polygon);
+		}
+	}
+}
+
+Point BSPTree::FindPolygonInteriorSimple(Polygon* polygon)
+{
+	// Find polygon interior x by COM and axis line intersection
+	// This is relatively computaional friendly
+
+	ivec3 c = getRoundedPolygonCOM(polygon);
+
+	// Pick the cloest axis that aligns with polygon normal
+	int axis = getCloestAxis(polygon->support.getNormal());
+
+	// Line polygon intersection
+	Line line = getAxisLine(c, axis);
+	Point x = intersectLinePolygon(polygon, line);
+
+	return x;
+}
+
+Point BSPTree::FindPolygonInteriorComplex(Polygon* polygon)
+{
+	// Iteratively find a random point inside polygon
+	// Not 100 percent valid
+
+	int pointCount = polygon->bounds.size();
+	int randomRange = 100;
+
+	srand((unsigned)time(NULL));
+
+	int iter = 0;
+	while (true)
+	{
+		int i = rand() % pointCount;
+
+		Plane p1 = polygon->bounds[i];
+		Plane p2 = polygon->bounds[(i + 1) % pointCount];
+
+		// Add random offset to move x around
+		p1.d = p1.d + rand() % randomRange;
+		p2.d = p2.d + rand() % randomRange;
+		Point x = intersect(p1, p2, polygon->support);
+
+		if (isPointInPolygon(polygon, x))
+			return x;
+		
+		if (++iter >= 1000)
+			return x;	// Fallback return
+	}
+}
+
+void BSPTree::BuildLocalBSP(BSPNode* leaf)
+{
+	for (int j = 0; j < leaf->polygons.size(); j++)
+	{
+		LocalBSPTree* localTree = new LocalBSPTree(j, leaf);
 		leaf->localTrees.push_back(localTree);
 	}
 }
@@ -150,7 +246,6 @@ void BSPTree::Split(BSPNode* node)
 		BSPNode* rightNode = new BSPNode();
 		rightNode->polygons = rightPolygons;
 
-		ivec3 adjust = ivec3{ AABB_ADJUST, AABB_ADJUST, AABB_ADJUST };
 		switch (axis)
 		{
 		case 0:
@@ -167,7 +262,8 @@ void BSPTree::Split(BSPNode* node)
 		}
 
 		// Apply adjustment to guarantee new ref point will not be on any polygon surface
-		rightNode->bound.min = rightNode->bound.min - adjust; 
+		//ivec3 adjust = ivec3{ AABB_ADJUST, AABB_ADJUST, AABB_ADJUST };
+		//rightNode->bound.min = rightNode->bound.min - adjust; 
 
 		rightNode->refPoint = TraceRefPoint(node, axis);
 		node->rightChild = rightNode;
@@ -188,37 +284,104 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 
 	// Line from old ref point and new ref point
 	// It is assumed to be one of the axis
-	Segment traceSegment = getAxisSegmentFromPositions(node->refPoint.pos, refPoint.pos, axis);
+	Segment segment = getAxisSegmentFromPositions(node->refPoint.pos, refPoint.pos, axis);
 
 	// Trace refPoint through every polygon
 	std::vector<Polygon*> polygons = node->leftChild->polygons;
 	for (int i = 0; i < polygons.size(); i++)
 	{
-		bool hasIntersect = intersectSegmentPolygon(polygons[i], traceSegment).x4 != 0;
-
-		if (hasIntersect)
-		{
-			ivec3 segmentDir = refPoint.pos - node->refPoint.pos;
-			
-			int sign = ivec3::dot(segmentDir, polygons[i]->support.getNormal());
-			if (sign > 0)
-			{
-				// Trace is going out
-				int meshId = polygons[i]->meshId;
-				refPoint.WNV[meshId] = refPoint.WNV[meshId] - 1;
-			}
-			else
-			{
-				// Trace is going in
-				int meshId = polygons[i]->meshId;
-				refPoint.WNV[meshId] = refPoint.WNV[meshId] + 1;
-			}
-		}
+		refPoint.WNV = TraceSegment(polygons[i], segment, refPoint.WNV);
 	}
 
 	return refPoint;
 }
 
+std::vector<int> BSPTree::TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV)
+{
+	bool hasIntersect = intersectSegmentPolygon(polygon, segment).x4 != 0;
+	if (hasIntersect)
+	{
+		Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
+		Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
+		ivec3 dir = ed.getPosition() - st.getPosition();
+
+		int sign = ivec3::dot(dir, polygon->support.getNormal());
+		if(sign > 0)
+		{
+			// Segment is going out
+			WNV[polygon->meshId] = WNV[polygon->meshId] - 1;
+		}
+		else if(sign < 0)
+		{
+			// Segment is going in
+			WNV[polygon->meshId] = WNV[polygon->meshId] + 1;
+		}
+		else
+		{
+			// Segment lays on the polygon (impossible under our assumption?)
+		}	
+	}
+
+	return WNV;
+}
+
+std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
+{
+	// 3. Trace x back to ref point
+	//	by constructing 1 or 2 points in between
+	// (no point in between is impossible because a part of polygon would have been outside AABB)
+	ivec3 xPos = x.getPosition();
+	std::vector<Plane> xPlanes;
+	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 1, 0, 0 }));
+	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 1, 0 }));
+	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 0, 1 }));
+
+	std::vector<Plane> refPlanes;
+	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 1, 0, 0 }));
+	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 1, 0 }));
+	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 0, 1 }));
+
+	std::vector<Segment> segments;
+
+	// 3.1 - Pick the first intermediate point
+	int pick0 = 2;
+	Plane p0 = refPlanes[0];
+	Plane p1 = refPlanes[1];
+	Plane p2 = xPlanes[pick0];
+	while (isPlaneEqual(p2, p0) || isPlaneEqual(p2, p1))
+	{
+		pick0 = (pick0 + 1) % 3;
+		p2 = xPlanes[pick0];
+	}
+	segments.push_back(Segment{ Line{p0, p1}, p2, refPlanes[pick0] });
+
+	// 3.2 - Pick the second intermediate point (if it exists)
+	int pick1 = (pick0 + 1) % 3;
+	int remain = (pick1 + 1) % 3;
+	p2 = xPlanes[pick1];
+	if (isPlaneEqual(p2, refPlanes[remain]))
+	{
+		pick1 = (pick1 + 1) % 3;
+		remain = (pick1 + 1) % 3;
+	}
+
+	if (!isPlaneEqual(p2, refPlanes[remain]))
+	{
+		// When second point exists
+		segments.push_back(Segment{ Line{xPlanes[pick1], refPlanes[remain]}, refPlanes[pick1], xPlanes[remain] });
+		if (!isPlaneEqual(refPlanes[remain], xPlanes[remain]))
+		{
+			segments.push_back(Segment{ Line{xPlanes[pick0], xPlanes[pick1]}, xPlanes[remain], refPlanes[remain] });
+		}
+	}
+	else
+	{
+		// Or simply connect the first intermediate point and x
+		segments.push_back(Segment{ Line{xPlanes[pick0], xPlanes[pick1]}, xPlanes[remain], refPlanes[remain] });
+	}
+
+	return segments;
+}
 
 // ========== Local BSP ============
 
@@ -237,6 +400,7 @@ LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 			continue;
 		}
 
+		// Poygon intersection
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
 		
 		for (int j = 0; j < segments.size(); j++)
@@ -328,7 +492,7 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 	std::vector<Point> points;
 	for (int i = 0; i < p1->bounds.size(); i++)
 	{
-		Point point = intersectSegmentPolygon(p2, p1->getSegment(i));
+		Point point = intersectSegmentPolygon(p2, getPolygonSegment(p1, i));
 
 		if (!point.isValid())
 			continue;
@@ -360,7 +524,7 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 			// C4: intersection forms a polygon (collect all p2's edges)		
 			for (int i = 0; i < p2->bounds.size(); i++)
 			{
-				segments.push_back(p2->getSegment(i));
+				segments.push_back(getPolygonSegment(p2, i));
 			}
 		}
 		else
@@ -388,4 +552,17 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 	}
 
 	return segments;
+}
+
+void LocalBSPTree::CollectPolygons(std::vector<Polygon*>& container)
+{
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		LocalBSPNode* node = nodes[i];
+
+		if (node->leftChild != nullptr || node->rightChild != nullptr || node->disable)
+			continue;
+
+		container.push_back(node->polygon);
+	}
 }

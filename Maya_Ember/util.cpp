@@ -54,6 +54,83 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 //}
 
 
+bool ember::isPlaneEqual(Plane p1, Plane p2)
+{
+	ivec3 nor1 = p1.getNormal();
+	ivec3 nor2 = p2.getNormal();
+
+	if (!isDirectionEqual(nor1, nor2))
+		return false;
+
+	if (p1.d == 0)
+		return true;
+
+	if (p1.a != 0)
+		return p2.a / p1.a == p2.d / p1.d;
+	else if (p1.b != 0)
+		return p2.b / p1.b == p2.d / p1.d;
+	else if (p1.c != 0)
+		return p2.c / p1.c == p2.d / p1.d;
+	else
+		return false;
+}
+
+bool ember::isPointInPolygon(Polygon* polygon, Point point)
+{
+	for (int i = 0; i < polygon->bounds.size(); i++)
+	{
+		int c = classify(point, polygon->bounds[i]);
+		if (c >= 0)	// Points on polygon edge are also considered 'exterior'
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+int ember::getCloestAxis(ivec3 dir)
+{
+	int x = abs(dir.x);
+	int y = abs(dir.y);
+	int z = abs(dir.z);
+
+	if (x > y && x > z)
+	{
+		return 0;
+	}
+	else if (y > x && y > z)
+	{
+		return 1;
+	}
+	else
+	{
+		return 2;
+	}
+}
+
+Line ember::getAxisLine(ivec3 pos, int axis)
+{
+	Line line;
+	switch (axis)
+	{
+	case 0:
+		line.p1 = Plane::fromPositionNormal(pos, ivec3{ 0, 1, 0 });
+		line.p2 = Plane::fromPositionNormal(pos, ivec3{ 0, 0, 1 });
+		break;
+	case 1:
+		line.p1 = Plane::fromPositionNormal(pos, ivec3{ 1, 0, 0 });
+		line.p2 = Plane::fromPositionNormal(pos, ivec3{ 0, 0, 1 });
+		break;
+	case 2:
+		line.p1 = Plane::fromPositionNormal(pos, ivec3{ 1, 0, 0 });
+		line.p2 = Plane::fromPositionNormal(pos, ivec3{ 0, 1, 0 });
+		break;
+	default:
+		break;
+	}
+	return line;
+}
+
 Point ember::getPointfromPosition(ivec3 pos)
 {
 	// Build point as intersection of three axis planes
@@ -63,7 +140,38 @@ Point ember::getPointfromPosition(ivec3 pos)
 	return intersect(xy, yz, zx);
 }
 
-Segment ember::getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis)
+Point ember::getPolygonPoint(Polygon* polygon, int index)
+{
+	int pointCount = polygon->bounds.size();
+	Plane plane1 = polygon->bounds[index];
+	Plane plane2 = polygon->bounds[(index+1) % pointCount];
+	return intersect(plane1, plane2, polygon->support);
+}
+
+Segment ember::getPolygonSegment(Polygon* polygon, int index)
+{
+	int edgeCount = polygon->bounds.size();
+	Plane plane1 = polygon->bounds[(index - 1 + edgeCount) % edgeCount];
+	Plane plane2 = polygon->bounds[index];
+	Plane plane3 = polygon->bounds[(index + 1) % edgeCount];
+	return Segment{ Line{polygon->support, plane2}, plane1, plane3 };
+}
+
+ivec3 ember::getRoundedPolygonCOM(Polygon* polygon)
+{
+	ivec3 accumulate{ 0, 0, 0 };
+
+	int pointCount = polygon->bounds.size();
+	for (int i = 0; i < pointCount; i++)
+	{
+		Point point = getPolygonPoint(polygon, i);
+		accumulate = accumulate + point.getPosition();
+	}
+
+	return ivec3{ accumulate.x / pointCount, accumulate.y / pointCount, accumulate.z / pointCount };
+}
+
+Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 {
 	Line line;
 	Segment segment;
@@ -71,22 +179,22 @@ Segment ember::getAxisSegmentFromPositions(ivec3 pos1, ivec3 pos2, int axis)
 	switch (axis)
 	{
 	case 0:	// X axis (Line planes are XY, XZ)
-		line.p1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 0, 1 });
-		line.p2 = Plane::fromPositionNormal(pos1, ivec3{ 0, 1, 0 });
-		segment.bound1 = Plane::fromPositionNormal(pos1, ivec3{ 1, 0, 0 });
-		segment.bound2 = Plane::fromPositionNormal(pos2, ivec3{ 1, 0, 0 });
+		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
+		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
+		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
+		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
 		break;
 	case 1:	// Y axis (Line planes are XY, YZ)
-		line.p1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 0, 1 });
-		line.p2 = Plane::fromPositionNormal(pos1, ivec3{ 1, 0, 0 });
-		segment.bound1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 1, 0 });
-		segment.bound2 = Plane::fromPositionNormal(pos2, ivec3{ 0, 1, 0 });
+		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
+		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
+		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
+		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
 		break;
 	case 2:	// Z axis (Line planes are XZ, YZ)
-		line.p1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 1, 0 });
-		line.p2 = Plane::fromPositionNormal(pos1, ivec3{ 1, 0, 0 });
-		segment.bound1 = Plane::fromPositionNormal(pos1, ivec3{ 0, 0, 1 });
-		segment.bound2 = Plane::fromPositionNormal(pos2, ivec3{ 0, 0, 1 });
+		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
+		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
+		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
+		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });
 		break;
 	default:
 		break;
@@ -161,9 +269,9 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	return std::make_pair(leftPolygon, rightPolygon);
 }
 
-Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
+Point ember::intersectLinePolygon(Polygon* polygon, Line line)
 {
-	Point x = intersect(polygon->support, segment.line.p1, segment.line.p2);
+	Point x = intersect(polygon->support, line.p1, line.p2);
 
 	// If intersection is not unique
 	if (x.x4 == 0)
@@ -171,24 +279,31 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 		return x;
 	}
 
-	// If intersection point is within segment
+	// If the intersection point is not inside polygon
+	if (!isPointInPolygon(polygon, x))
+	{
+		x.x4 = 0;
+	}
+
+	return x;
+}
+
+Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
+{
+	Point x = intersectLinePolygon(polygon, segment.line);
+
+	// If line intersection is invalid 
+	if (x.x4 == 0)
+	{
+		return x;
+	}
+
+	// If intersection point is not within segment
 	int c1 = classify(x, segment.bound1);
 	int c2 = classify(x, segment.bound2);
 	if (c1 >= 0 || c2 >= 0) // Points right on the segment end are considered 'exterior'
 	{
-		x.x4 = 0; // set x4 to 0 to indicate the result is invalid
-		return x;
-	}
-
-	// If the intersection point is inside polygon
-	for (int j = 0; j < polygon->bounds.size(); j++)
-	{
-		int c = classify(x, polygon->bounds[j]);
-		if (c >= 0)	// Points on polygon edge are also considered 'exterior'
-		{
-			x.x4 = 0;
-			return x;
-		}
+		x.x4 = 0; 
 	}
 
 	return x;
