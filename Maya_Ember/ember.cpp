@@ -27,6 +27,7 @@ void EMBER::BuildBSPTree()
 	root->bound = initBound;
 	root->polygons = polygons;
 
+	// Create initial ref point in the min corner of AABB  
 	RefPoint refPoint;
 	refPoint.pos = initBound.min;
 	refPoint.WNV = std::vector<int>(meshId, 0);

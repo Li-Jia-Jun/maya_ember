@@ -18,7 +18,7 @@ namespace ember
 	private:
 		int meshId;							// Incremental count of meshes
 		std::vector<Polygon*> polygons;		// Initial polygon soup
-		AABB initBound;
+		AABB initBound;						// Initial bound
 		BSPTree bspTree;
 	};
 }

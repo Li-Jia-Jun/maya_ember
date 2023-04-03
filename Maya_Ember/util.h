@@ -47,6 +47,11 @@ namespace ember
 	Segment getPolygonSegment(Polygon* polygon, int index);
 
 	/// <summary>
+	/// This create function guarantees that bounding planes orient outward
+	/// </summary>
+	Segment getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Plane bound2);
+
+	/// <summary>
 	/// Get polygon center of mass and rounded to integer coordinate
 	/// </summary>
 	ivec3 getRoundedPolygonCOM(Polygon* polygon);

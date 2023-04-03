@@ -154,7 +154,29 @@ Segment ember::getPolygonSegment(Polygon* polygon, int index)
 	Plane plane1 = polygon->bounds[(index - 1 + edgeCount) % edgeCount];
 	Plane plane2 = polygon->bounds[index];
 	Plane plane3 = polygon->bounds[(index + 1) % edgeCount];
+
+	// If the convex polygon can guarantee bounding plane orient outward,
+	// the new segment bounding plane will also orient outward
 	return Segment{ Line{polygon->support, plane2}, plane1, plane3 };
+}
+
+Segment ember::getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Plane bound2)
+{
+	Point st = intersect(plane1, plane2, bound1);
+	Point ed = intersect(plane1, plane2, bound2);
+	ivec3 dir = ed.getPosition() - st.getPosition();
+
+	// Make sure both bounds orient outside
+	if (ivec3::dot(bound1.getNormal(), dir) > 0)
+	{
+		bound1 = Plane{-bound1.a, -bound1.b, -bound1.c, -bound1.d }; 
+	}
+	if (ivec3::dot(bound2.getNormal(), dir) < 0)
+	{
+		bound2 = Plane{ -bound2.a, -bound2.b, -bound2.c, -bound2.d };
+	}
+
+	return Segment{ Line{plane1, plane2}, bound1, bound2 };
 }
 
 ivec3 ember::getRoundedPolygonCOM(Polygon* polygon)
@@ -181,20 +203,48 @@ Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 	case 0:	// X axis (Line planes are XY, XZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
-		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
+
+		// Make sure all bound planes orient outside
+		if (edPos.x > stPos.x)
+		{
+			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ -1, 0, 0 });
+			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
+		}
+		else
+		{
+			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
+			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ -1, 0, 0 });
+		}
 		break;
 	case 1:	// Y axis (Line planes are XY, YZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
-		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
+
+		if (edPos.y > stPos.y)
+		{
+			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, -1, 0 });
+			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
+		}
+		else
+		{
+			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
+			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, -1, 0 });
+		}
 		break;
 	case 2:	// Z axis (Line planes are XZ, YZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
-		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });
+
+		if (edPos.z > stPos.z)
+		{
+			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, -1 });
+			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });
+		}
+		else
+		{
+			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
+			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, -1 });
+		}
 		break;
 	default:
 		break;
@@ -240,7 +290,11 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 			if (!hasSplit)
 			{
 				leftEdgePlanes.push_back(splitPlane);
-				rightEdgePlanes.push_back(splitPlane);
+
+				// Since split plane orients to right side, we need to flip it
+				// to make sure all bound planes orient outside
+				Plane flippedSplitPlane = Plane{-splitPlane.a, -splitPlane.b, -splitPlane.c, -splitPlane.d};
+				rightEdgePlanes.push_back(flippedSplitPlane);
 				hasSplit = true;
 			}
 

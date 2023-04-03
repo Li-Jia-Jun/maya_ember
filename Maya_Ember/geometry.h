@@ -131,8 +131,13 @@ namespace ember
 			{
 				ivec3 p1 = posVec[i];
 				ivec3 p2 = posVec[(i + 1) % count];
-				ivec3 p3 = p1 + normal; // p3 is outside support plane
-				bounds.push_back(Plane::fromTriangle(p1, p2, p3));
+				ivec3 edgeDir = p2 - p1;
+
+				// If the vertex order follows the right hand rule
+				// the calculated bound plane normal will orient outside
+				ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);	
+
+				bounds.push_back(Plane::fromPositionNormal(p1, nor));
 			}
 
 			return new Polygon{ meshId, support, bounds };

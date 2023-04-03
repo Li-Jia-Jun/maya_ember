@@ -5,13 +5,10 @@
 
 namespace ember
 {
-	class EMBER;
-	class BSPTree;
 	class LocalBSPTree;
 
 	struct AABB 
 	{
-		//Point min, max;
 		ivec3 min, max;
 	};
 
@@ -49,10 +46,11 @@ namespace ember
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
 		std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
 		std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
+		bool WNVBoolean(std::vector<int> WNV);
 		
 	private:
 		std::vector<BSPNode*> nodes;				// Element 0 is root node
-		std::vector<Polygon*> outputPolygons;		// The final output
+		std::vector<Polygon*> outputPolygons;		// The final output (boolean)
 	};
 
 	// Local BSP for leaf node of the Global BSP

@@ -22,7 +22,7 @@ void BSPTree::Build(BSPNode* rootNode)
 	nodes.clear();
 	nodes.push_back(rootNode);
 
-	// Create tree nodes recursively
+	// Create tree nodes recursively (in breadth first order)
 	std::vector<BSPNode*> toTraverse;
 	toTraverse.push_back(rootNode);
 	while (!nodes.empty())
@@ -67,14 +67,14 @@ void BSPTree::Build(BSPNode* rootNode)
 void BSPTree::FaceClassification(BSPNode* leaf)
 {
 	// 1. Gather all the polygons from leaf nodes of all local bsp trees
-	// They are candidates for the final ouput polygons
+	// They satifsfy P1 and P2 so they candidates for the final ouput polygons
 	std::vector<Polygon*> candidates;
 	for (int i = 0; i < leaf->localTrees.size(); i++)
 	{
 		leaf->localTrees[i]->CollectPolygons(candidates);
 	}
 	
-	// 2. Compute WNV for candidate polygons
+	// 2. Compute WNV for each candidate polygon
 	for (int i = 0; i < candidates.size(); i++)
 	{
 		Polygon* polygon = candidates[i];
@@ -102,8 +102,7 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 			}
 		}
 
-		// Temporary method to map WNV (assumes we only have 2 mesh for now)
-		if (WNV[0] != 0 && WNV[1] == 0)
+		if (WNVBoolean(WNV))
 		{
 			outputPolygons.push_back(polygon);
 		}
@@ -170,6 +169,7 @@ void BSPTree::BuildLocalBSP(BSPNode* leaf)
 void BSPTree::Split(BSPNode* node)
 {
 	// Split by the midpoint of the longest length
+	// The split plane always orient along positive axis
 	int axis, midValue;
 	Plane splitPlane;
 	ivec3 min = node->bound.min;
@@ -213,7 +213,7 @@ void BSPTree::Split(BSPNode* node)
 	}
 
 	// Left Node
-	// - Max bound changes 
+	// - Max bound changes to middle point
 	// - RefPoint remains the same
 	if (leftPolygons.size() > 0)
 	{
@@ -234,12 +234,11 @@ void BSPTree::Split(BSPNode* node)
 			break;
 		}
 		leftNode->refPoint = node->refPoint;
-
 		node->leftChild = leftNode;
 	}
 
 	// Right Node
-	// - Min bound changes
+	// - Min bound changes to middle points
 	// - Trace new RefPoint
 	if (rightPolygons.size() > 0)
 	{
@@ -260,10 +259,6 @@ void BSPTree::Split(BSPNode* node)
 		default:
 			break;
 		}
-
-		// Apply adjustment to guarantee new ref point will not be on any polygon surface
-		//ivec3 adjust = ivec3{ AABB_ADJUST, AABB_ADJUST, AABB_ADJUST };
-		//rightNode->bound.min = rightNode->bound.min - adjust; 
 
 		rightNode->refPoint = TraceRefPoint(node, axis);
 		node->rightChild = rightNode;
@@ -353,7 +348,7 @@ std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 		pick0 = (pick0 + 1) % 3;
 		p2 = xPlanes[pick0];
 	}
-	segments.push_back(Segment{ Line{p0, p1}, p2, refPlanes[pick0] });
+	segments.push_back(getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]));
 
 	// 3.2 - Pick the second intermediate point (if it exists)
 	int pick1 = (pick0 + 1) % 3;
@@ -368,19 +363,30 @@ std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 	if (!isPlaneEqual(p2, refPlanes[remain]))
 	{
 		// When second point exists
-		segments.push_back(Segment{ Line{xPlanes[pick1], refPlanes[remain]}, refPlanes[pick1], xPlanes[remain] });
+		segments.push_back(getSegmentfromPlanes(xPlanes[pick1], refPlanes[remain], refPlanes[pick1], xPlanes[remain]));
 		if (!isPlaneEqual(refPlanes[remain], xPlanes[remain]))
 		{
-			segments.push_back(Segment{ Line{xPlanes[pick0], xPlanes[pick1]}, xPlanes[remain], refPlanes[remain] });
+			segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
 		}
 	}
 	else
 	{
 		// Or simply connect the first intermediate point and x
-		segments.push_back(Segment{ Line{xPlanes[pick0], xPlanes[pick1]}, xPlanes[remain], refPlanes[remain] });
+		segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
 	}
 
 	return segments;
+}
+
+bool BSPTree::WNVBoolean(std::vector<int> WNV)
+{
+	// Temporary method to map WNV (assumes we only have 2 meshes for now)
+	if (WNV[0] != 0 && WNV[1] == 0)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 // ========== Local BSP ============
@@ -392,7 +398,7 @@ LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 	nodes.push_back(root);
 	mark = index; // The mark is its index in the leaf BSP node
 
-	// Add segment by all other polygons in leaf node
+	// Add segment by intersecting with all other polygons in the same leaf node
 	for (int i = 0; i < leaf->polygons.size(); i++)
 	{
 		if (i == mark)
@@ -400,7 +406,6 @@ LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 			continue;
 		}
 
-		// Poygon intersection
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
 		
 		for (int j = 0; j < segments.size(); j++)
@@ -537,13 +542,11 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 		if (points.size() >= 2)
 		{
 			// C3: forms a non-degenerate segment (add this segment)
-			Segment segment;
-			segment.line = Line{ p1->support, p2->support };
 			ivec3 nor = ivec3::cross(p1->support.getNormal(), p2->support.getNormal());
-			segment.bound1 = Plane::fromPositionNormal(points[0].getPosition(), nor);
-			segment.bound2 = Plane::fromPositionNormal(points[1].getPosition(), nor);
+			Plane bound1 = Plane::fromPositionNormal(points[0].getPosition(), nor);
+			Plane bound2 = Plane::fromPositionNormal(points[1].getPosition(), nor);
 			
-			segments.push_back(segment);
+			segments.push_back(getSegmentfromPlanes(p1->support, p2->support, bound1, bound2));
 		}
 		else
 		{
