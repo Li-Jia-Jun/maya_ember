@@ -12,6 +12,12 @@
 #include <maya/MPxCommand.h>
 #include <maya/MSelectionList.h>
 #include <maya/MItMeshPolygon.h>
+#include <maya/MIntArray.h>
+#include <maya/MVectorArray.h>
+#include <maya/MFnMeshData.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnTransform.h>
+
 
 #include "ember.h"
 #include <vector>

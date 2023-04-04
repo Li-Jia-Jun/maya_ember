@@ -14,39 +14,8 @@ void* helloMaya::creator()
 MStatus helloMaya::doIt(const MArgList& argList)
 {
 	MStatus status;
-	MGlobal::displayInfo("Hello World!");
+	MGlobal::displayInfo("Reticuleana");
 	// <<<your code goes here>>>
-
-	MString nameStr;
-	MString idStr;
-	for (int i = 0; i < argList.length(); i++)
-	{
-		if (MString("-name") == argList.asString(i, &status) && 
-			MS::kSuccess == status)
-		{
-			nameStr = argList.asString(++i, &status);
-		}
-		else if (MString("-id") == argList.asString(i, &status) &&
-			MS::kSuccess == status)
-		{
-			idStr = argList.asString(++i, &status);
-		}
-		else
-		{
-			// Do nothing for unidentified parameters
-		}
-	}
-
-	MString formatStr = "confirmDialog -title \"Hello Maya\" -message \"Name: ^1s \\nId: ^2s\" - button \"OK\" - defaultButton \"OK\"; ";
-	MString dialogStr;
-	dialogStr.format(formatStr, nameStr, idStr);
-	status = MGlobal::executeCommand(dialogStr);
-
-	if (!status)
-	{
-		status.perror("confirmDialog command failed");
-	}	
-
 
 	MSelectionList selectionList;
 	MGlobal::getActiveSelectionList(selectionList);
@@ -70,34 +39,27 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		MGlobal::displayInfo(meshName);
 
 		// Note: here we assume the mesh is a pure triangle mesh
+		// Iterate through triangulated polygons and add their vertices and normals
 		for (; !polygonIt.isDone(); polygonIt.next())
 		{
 			MPointArray pointArray;
 			MIntArray triangleVerts;
 			MVector normal;
-			//polygonIt.getTriangles(pointArray, triangleVerts, MSpace::kObject);
 			polygonIt.getTriangle(0, pointArray, triangleVerts, MSpace::kObject);
-			// Print out the indices of the triangle's vertices
-			//char buffer[128];
-			// sprintf_s(buffer, " Triangle:  (%i, %i, %i)", triangleVerts[0], triangleVerts[1], triangleVerts[2]);
-			// MGlobal::displayInfo(buffer);
 
 			// Get the normal of the current triangle
 			polygonIt.getNormal(normal, MSpace::kObject);
-			//sprintf_s(buffer, " Normal: (%f, %f, %f)", normal.x, normal.y, normal.z);
-			//MGlobal::displayInfo(buffer);
 			ember::ivec3 emberNormal;
 			emberNormal.x = normal.x;
-			emberNormal.y = normal.y;			
+			emberNormal.y = normal.y;
 			emberNormal.z = normal.z;
 			normals.push_back(emberNormal);
-			
+
+			// Each triangles have 3 vertices
 			std::vector<ember::ivec3 > emberVerts;
 			for (int k = 0; k < 3; k++)
 			{
 				MPoint point = pointArray[k];
-				//mesh.getPoint(k, point); // Get the position of the ith vertex
-
 				if (point.x < minX)
 				{
 					minX = point.x;
@@ -122,9 +84,8 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				{
 					maxZ = point.z;
 				}
-				// char buffer[128];
-				// sprintf_s(buffer, " Point: (%f, %f, %f)", point.x, point.y, point.z);
-				// MGlobal::displayInfo(buffer);
+
+				// Scale the vert pos to a big enough number
 				ember::ivec3 emberVert;
 				emberVert.x = point.x * BIG_NUM;
 				emberVert.y = point.y * BIG_NUM;
@@ -145,6 +106,61 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		bound.min.z = minZ * BIG_NUM;
 		ember.SetInitBound(bound);
 
+	
+		ember.BuildBSPTree();
+	
+	}
+
+
+
+		// Try drawing a simple box with some given verts
+		
+		// It seems that the vert must be counter clock wise
+		MPointArray vertices;
+		vertices.append(MPoint(-0.5, 0.5, 0.5));
+		vertices.append(MPoint(0.5, 0.5, 0.5));
+		vertices.append(MPoint(0.5, -0.5, 0.5));
+		vertices.append(MPoint(-0.5, -0.5, 0.5));
+		vertices.append(MPoint(-0.5, 0.5, -0.5));
+		vertices.append(MPoint(0.5, 0.5, -0.5));
+		vertices.append(MPoint(0.5, -0.5, -0.5));
+		vertices.append(MPoint(-0.5, -0.5, -0.5));
+
+		// num of verts for each face
+		MIntArray vertCount;
+		for (int i = 0; i < 6; i++)
+		{
+			vertCount.append(4);
+		}
+
+		int faceConnectsArray[] = { 3, 2, 1, 0, 2, 6, 5, 1, 6, 7, 4, 5, 7, 3, 0, 4, 0, 1, 5, 4, 7, 6, 2, 3};
+		MIntArray vertList(faceConnectsArray, 24);
+
+		MFnMesh meshFn;
+
+		MIntArray faceList;
+		for (int i = 0; i < 6; i++)
+		{
+			faceList.append(i);
+		}
+
+		MFnTransform transformFn;
+		MObject transformObj = transformFn.create();
+		transformFn.setName("BooleanaResult");
+
+		
+		MObject meshObj = meshFn.create(
+			vertices.length(),	// num of verts
+			vertCount.length(),	// num of polygons
+			vertices,	// vert pos array
+			vertCount,	// polygon count array
+			vertList,	// polygon connects
+			transformObj	//parent object
+		);
+		meshFn.setName("ResultShape");
+		MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
+
+
 		/* PRINT DEBUGGING INFO */
 		//for (int i = 0; i < vertices.size(); i++)
 		//{
@@ -164,7 +180,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		//char buffer[128];
 		//sprintf_s(buffer, " bound: max: (%i, %i, %i), min: (%i, %i, %i)", bound.max.x, bound.max.y, bound.max.z, bound.min.x, bound.min.y, bound.min.z);
 		//MGlobal::displayInfo(buffer);
-	}
+		//}
 	return status;
 }
 
