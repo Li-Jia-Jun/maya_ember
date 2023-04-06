@@ -1,5 +1,4 @@
 #pragma once
-
 #include "geometry.h"
 #include <utility>
 
@@ -85,5 +84,15 @@ namespace ember
 	Point intersect(Plane p, Plane q, Plane r);
 
 	int classify(Point x, Plane s);
+
+	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
+
+
+	void printIvec3(ivec3);
+	void printPoint(Point);
+	void printPlane(Plane);
+	void printPolygon(Polygon);
+
 }
+
 

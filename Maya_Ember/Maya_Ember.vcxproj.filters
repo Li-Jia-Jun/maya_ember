@@ -30,6 +30,9 @@
     <ClInclude Include="bsp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="maya_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hello_maya.cpp">

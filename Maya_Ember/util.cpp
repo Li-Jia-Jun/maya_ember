@@ -1,5 +1,7 @@
 #include "util.h"
 
+#include <maya/MGlobal.h>
+#include <maya/MString.h>
 using namespace ember;
 
 
@@ -189,6 +191,12 @@ ivec3 ember::getRoundedPolygonCOM(Polygon* polygon)
 		Point point = getPolygonPoint(polygon, i);
 		accumulate = accumulate + point.getPosition();
 	}
+
+	//Point point = getPolygonPoint(polygon, 0);
+	//char buffer[128];
+	//sprintf_s(buffer, "Compute polygon com, point 0 pos = %i %i %i ", point.getPosition().x, point.getPosition().y, point.getPosition().z);
+	//MString debug(buffer);
+	//MGlobal::displayInfo(buffer);
 
 	return ivec3{ accumulate.x / pointCount, accumulate.y / pointCount, accumulate.z / pointCount };
 }
@@ -393,5 +401,86 @@ int ember::classify(Point x, Plane s)
 	// Return 1 means x on the positive side of s
 	// Return -1 means x on the negative side of s
 	// Return 0 means x on s	
+	return 0;
 	return sign(multiply(x, s)) * sign(x.x4);
 }
+
+Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
+{
+	// Compute support plane
+	//printIvec3(normal);
+	ivec3 p0 = posVec[0];
+	Plane support = Plane::fromPositionNormal(p0, normal);
+	//printPlane(support);
+
+	// Compute bound plane for each edge
+	// (assume that bound plane is perpendicular to support plane)
+	std::vector<Plane> bounds;
+	int count = posVec.size();
+	for (int i = 0; i < count; i++)
+	{
+		//MGlobal::displayInfo("NEW ITERATION");
+
+		ivec3 p1 = posVec[i];
+		ivec3 p2 = posVec[(i + 1) % count];
+		ivec3 edgeDir = p2 - p1;
+
+		//printIvec3(p1);
+		//printIvec3(p2);
+		//printIvec3(edgeDir);
+
+
+		// If the vertex order follows the right hand rule
+		// the calculated bound plane normal will orient outside
+		ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);
+
+		//printIvec3(nor);
+
+		bounds.push_back(Plane::fromPositionNormal(p1, nor));
+		//printPlane(bounds[i]);
+	}
+
+	return new Polygon{ meshId, support, bounds };
+}
+
+
+void ember::printIvec3(ember::ivec3 v)
+{
+	char buffer[128];
+	sprintf_s(buffer, "ivec3: %i %i %i", v.x, v.y, v.z);
+	MString debug(buffer);
+	MGlobal::displayInfo(buffer);
+}
+
+void ember::printPoint(ember::Point p)
+{
+	char buffer[128];
+	sprintf_s(buffer, "x1: %i x2: %i x3: %i x4: %i", p.x1, p.x2, p.x3, p.x4);
+	MString debug(buffer);
+	MGlobal::displayInfo(buffer);
+}
+
+void ember::printPlane(ember::Plane p)
+{
+	char buffer[128];
+	sprintf_s(buffer, "a: %i b: %i c: %i d: %i", p.a, p.b, p.c, p.d);
+	MString debug(buffer);
+	MGlobal::displayInfo(buffer);
+}
+
+void ember::printPolygon(ember::Polygon p)
+{
+	char buffer[128];
+	sprintf_s(buffer, "support plane: ");
+	MString debug(buffer);
+	MGlobal::displayInfo(buffer);
+	ember::printPlane(p.support);
+
+	sprintf_s(buffer, "bounds: ");
+	MGlobal::displayInfo(buffer);
+	for (int i = 0; i < p.bounds.size(); i++)
+	{
+		ember::printPlane(p.bounds[i]);
+	}
+}
+

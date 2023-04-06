@@ -3,7 +3,7 @@
 
 // define EXPORT for exporting dll functions
 #define EXPORT _declspec(dllexport)
-#define BIG_NUM 100000
+#define BIG_NUM 10000
 
 // Maya Plugin creator function
 void* helloMaya::creator()
@@ -19,7 +19,12 @@ MStatus helloMaya::doIt(const MArgList& argList)
 
 	MSelectionList selectionList;
 	MGlobal::getActiveSelectionList(selectionList);
-	
+
+
+	ember::EMBER ember = ember::EMBER();
+	// For finding the bound
+	float minX = 100000000, minY = 100000000, minZ = 100000000, maxX = -100000000, maxY = -100000000, maxZ = -100000000;
+
 	// Iterating through all the selected mesh objects
 	for (int i = 0; i < selectionList.length(); i++)
 	{
@@ -30,11 +35,9 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		MFnMesh mesh(dagPath); // Create an MFnMesh object from the selected object
 		MItMeshPolygon polygonIt(dagPath);
 
-		ember::EMBER ember = ember::EMBER();
 		std::vector<std::vector<ember::ivec3>> vertices;
 		std::vector<ember::ivec3> normals;
 
-		float minX = 100000000, minY = 100000000, minZ = 100000000, maxX = -100000000, maxY = -100000000, maxZ = -100000000;
 		MString meshName(dagPath.partialPathName());
 		MGlobal::displayInfo(meshName);
 
@@ -47,7 +50,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			MVector normal;
 			polygonIt.getTriangle(0, pointArray, triangleVerts, MSpace::kObject);
 
-			// Get the normal of the current triangle
+			// Get the normal of the current vertex
 			polygonIt.getNormal(normal, MSpace::kObject);
 			ember::ivec3 emberNormal;
 			emberNormal.x = normal.x;
@@ -91,74 +94,18 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				emberVert.y = point.y * BIG_NUM;
 				emberVert.z = point.z * BIG_NUM;
 				emberVerts.push_back(emberVert);
+
+				//char buffer[128];
+				//sprintf_s(buffer, "Point: (%f, %f, %f)", point.x, point.y, point.z);
+				//MGlobal::displayInfo(buffer);
+
+				//ember::printIvec3(emberVert);
 			}
 			vertices.push_back(emberVerts);
 		}
 
 		// Load the data into an ember
 		ember.ReadMeshData(vertices, normals);
-		ember::AABB bound;
-		bound.max.x = maxX * BIG_NUM;
-		bound.max.y = maxY * BIG_NUM;
-		bound.max.z = maxZ * BIG_NUM;
-		bound.min.x = minX * BIG_NUM;
-		bound.min.y = minY * BIG_NUM;
-		bound.min.z = minZ * BIG_NUM;
-		ember.SetInitBound(bound);
-
-	
-		ember.BuildBSPTree();
-	
-	}
-
-
-
-		// Try drawing a simple box with some given verts
-		
-		// It seems that the vert must be counter clock wise
-		MPointArray vertices;
-		vertices.append(MPoint(-0.5, 0.5, 0.5));
-		vertices.append(MPoint(0.5, 0.5, 0.5));
-		vertices.append(MPoint(0.5, -0.5, 0.5));
-		vertices.append(MPoint(-0.5, -0.5, 0.5));
-		vertices.append(MPoint(-0.5, 0.5, -0.5));
-		vertices.append(MPoint(0.5, 0.5, -0.5));
-		vertices.append(MPoint(0.5, -0.5, -0.5));
-		vertices.append(MPoint(-0.5, -0.5, -0.5));
-
-		// num of verts for each face
-		MIntArray vertCount;
-		for (int i = 0; i < 6; i++)
-		{
-			vertCount.append(4);
-		}
-
-		int faceConnectsArray[] = { 3, 2, 1, 0, 2, 6, 5, 1, 6, 7, 4, 5, 7, 3, 0, 4, 0, 1, 5, 4, 7, 6, 2, 3};
-		MIntArray vertList(faceConnectsArray, 24);
-
-		MFnMesh meshFn;
-
-		MIntArray faceList;
-		for (int i = 0; i < 6; i++)
-		{
-			faceList.append(i);
-		}
-
-		MFnTransform transformFn;
-		MObject transformObj = transformFn.create();
-		transformFn.setName("BooleanaResult");
-
-		
-		MObject meshObj = meshFn.create(
-			vertices.length(),	// num of verts
-			vertCount.length(),	// num of polygons
-			vertices,	// vert pos array
-			vertCount,	// polygon count array
-			vertList,	// polygon connects
-			transformObj	//parent object
-		);
-		meshFn.setName("ResultShape");
-		MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
 
 
 		/* PRINT DEBUGGING INFO */
@@ -171,16 +118,82 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		//	MGlobal::displayInfo(buffer);
 		//	sprintf_s(buffer, " Vertex %i - 2: (%i, %i, %i)", i, vertices[i][2].x, vertices[i][2].y, vertices[i][2].z);
 		//	MGlobal::displayInfo(buffer);
+
+		//}
 		//for (int i = 0; i < normals.size(); i++)
 		//{
 		//	char buffer[128];
 		//	sprintf_s(buffer, " Normal %i: (%i, %i, %i)", i, normals[i].x, normals[i].y, normals[i].z);
 		//	MGlobal::displayInfo(buffer);
 		//}
+	}
+
+		ember::AABB bound;
+		int offset = 100;
+		bound.max.x = maxX * BIG_NUM + offset;
+		bound.max.y = maxY * BIG_NUM + offset;
+		bound.max.z = maxZ * BIG_NUM + offset;
+		bound.min.x = minX * BIG_NUM - offset;
+		bound.min.y = minY * BIG_NUM - offset;
+		bound.min.z = minZ * BIG_NUM - offset;
+		ember.SetInitBound(bound);
+
 		//char buffer[128];
 		//sprintf_s(buffer, " bound: max: (%i, %i, %i), min: (%i, %i, %i)", bound.max.x, bound.max.y, bound.max.z, bound.min.x, bound.min.y, bound.min.z);
 		//MGlobal::displayInfo(buffer);
+		
+		// The algorithm starts here
+		ember.BuildBSPTree();
+
+
+		//// Try drawing a simple box with some given verts
+		//
+		//// It seems that the vert must be counter clock wise
+		//MPointArray vertices;
+		//vertices.append(MPoint(-0.5, 0.5, 0.5));
+		//vertices.append(MPoint(0.5, 0.5, 0.5));
+		//vertices.append(MPoint(0.5, -0.5, 0.5));
+		//vertices.append(MPoint(-0.5, -0.5, 0.5));
+		//vertices.append(MPoint(-0.5, 0.5, -0.5));
+		//vertices.append(MPoint(0.5, 0.5, -0.5));
+		//vertices.append(MPoint(0.5, -0.5, -0.5));
+		//vertices.append(MPoint(-0.5, -0.5, -0.5));
+
+		//// num of verts for each face
+		//MIntArray vertCount;
+		//for (int i = 0; i < 6; i++)
+		//{
+		//	vertCount.append(4);
 		//}
+
+		//int faceConnectsArray[] = { 3, 2, 1, 0, 2, 6, 5, 1, 6, 7, 4, 5, 7, 3, 0, 4, 0, 1, 5, 4, 7, 6, 2, 3};
+		//MIntArray vertList(faceConnectsArray, 24);
+
+		//MFnMesh meshFn;
+
+		//MIntArray faceList;
+		//for (int i = 0; i < 6; i++)
+		//{
+		//	faceList.append(i);
+		//}
+
+		//MFnTransform transformFn;
+		//MObject transformObj = transformFn.create();
+		//transformFn.setName("BooleanaResult");
+
+		//
+		//MObject meshObj = meshFn.create(
+		//	vertices.length(),	// num of verts
+		//	vertCount.length(),	// num of polygons
+		//	vertices,	// vert pos array
+		//	vertCount,	// polygon count array
+		//	vertList,	// polygon connects
+		//	transformObj	//parent object
+		//);
+		//meshFn.setName("ResultShape");
+		//MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
+
+
 	return status;
 }
 

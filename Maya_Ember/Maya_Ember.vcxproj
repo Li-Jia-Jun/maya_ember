@@ -147,6 +147,7 @@
     <ClInclude Include="ember.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="hello_maya.h" />
+    <ClInclude Include="maya_util.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>

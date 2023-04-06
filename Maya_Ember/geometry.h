@@ -1,7 +1,6 @@
 #pragma once
-
 #include <vector>
-
+#include "util.h"
 namespace ember
 {
 	struct ivec3
@@ -117,32 +116,38 @@ namespace ember
 		Plane support;
 		std::vector<Plane> bounds;
 
-		static Polygon* fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
-		{
-			// Compute support plane
-			ivec3 p0 = posVec[0];
-			Plane support = Plane::fromPositionNormal(p0, normal);
+		//static Polygon* fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
+		//{
+		//	// Compute support plane
+		//	ivec3 p0 = posVec[0];
+		//	Plane support = Plane::fromPositionNormal(p0, normal);
+		//	//char buffer[128];
+		//	//sprintf_s(buffer, "Support p0: %i %i %i", p0.x, p0.y, p0.z);
+		//	//MString debug(buffer);
+		//	//MGlobal::displayInfo(buffer);
+		//	//sprintf_s(buffer, "Support: a: %i b: %i c: %i d: %i", support.a, support.b, support.c, support.d);
+		//	//MGlobal::displayInfo(buffer);
 
-			// Compute bound plane for each edge
-			// (assume that bound plane is perpendicular to support plane)
-			std::vector<Plane> bounds;
-			int count = posVec.size();
-			for (int i = 0; i < count; i++)
-			{
-				ivec3 p1 = posVec[i];
-				ivec3 p2 = posVec[(i + 1) % count];
-				ivec3 edgeDir = p2 - p1;
+		//	// Compute bound plane for each edge
+		//	// (assume that bound plane is perpendicular to support plane)
+		//	std::vector<Plane> bounds;
+		//	int count = posVec.size();
+		//	for (int i = 0; i < count; i++)
+		//	{
+		//		ivec3 p1 = posVec[i];
+		//		ivec3 p2 = posVec[(i + 1) % count];
+		//		ivec3 edgeDir = p2 - p1;
 
-				// If the vertex order follows the right hand rule
-				// the calculated bound plane normal will orient outside
-				ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);	
+		//		// If the vertex order follows the right hand rule
+		//		// the calculated bound plane normal will orient outside
+		//		ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);	
 
-				bounds.push_back(Plane::fromPositionNormal(p1, nor));
-			}
+		//		//printIvec3(nor);
 
-			return new Polygon{ meshId, support, bounds };
-		}
+		//		bounds.push_back(Plane::fromPositionNormal(p1, nor));
+		//	}
+
+		//	return new Polygon{ meshId, support, bounds };
+		//}
 	};
 }
-
-

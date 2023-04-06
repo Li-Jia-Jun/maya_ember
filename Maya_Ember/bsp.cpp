@@ -1,7 +1,6 @@
 #include "bsp.h"
 #include <cstdlib>
 #include <time.h>
-
 using namespace ember;
 
 
@@ -19,13 +18,19 @@ BSPTree::~BSPTree()
 
 void BSPTree::Build(BSPNode* rootNode)
 {
+
+	//for (int i = 0; i < rootNode->polygons.size(); i++)
+	//{
+	//	printPolygon(*rootNode->polygons[i]);
+	//}
+
 	nodes.clear();
 	nodes.push_back(rootNode);
 
 	// Create tree nodes recursively (in breadth first order)
 	std::vector<BSPNode*> toTraverse;
 	toTraverse.push_back(rootNode);
-	while (!nodes.empty())
+	while (!toTraverse.empty())
 	{	
 		BSPNode* node = toTraverse.back();
 		toTraverse.pop_back();
@@ -73,11 +78,13 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 	{
 		leaf->localTrees[i]->CollectPolygons(candidates);
 	}
-	
+
 	// 2. Compute WNV for each candidate polygon
 	for (int i = 0; i < candidates.size(); i++)
 	{
 		Polygon* polygon = candidates[i];
+		
+		//printPolygon(*polygon);
 
 		// 2. Pick a point inside polygon
 		Point x = FindPolygonInteriorSimple(polygon);
@@ -86,26 +93,29 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 			x = FindPolygonInteriorComplex(polygon);
 		}
 
+		//printPoint(x);
+
 		// Find path from x to ref point
 		std::vector<Segment> segments = FindPathBackToRefPoint(leaf->refPoint, x);
 		
 		// Update WNV
-		std::vector<int> WNV = leaf->refPoint.WNV;
-		for (int j = 0; j < segments.size(); j++)
-		{
-			for (int k = 0; k < candidates.size(); k++)
-			{
-				if (i == k)
-					continue;
+		//std::vector<int> WNV = leaf->refPoint.WNV;
+		//for (int j = 0; j < segments.size(); j++)
+		//{
+		//	for (int k = 0; k < candidates.size(); k++)
+		//	{
+		//		if (i == k)
+		//			continue;
 
-				WNV = TraceSegment(candidates[k], segments[j], WNV);
-			}
-		}
+		//		WNV = TraceSegment(candidates[k], segments[j], WNV);
+		//	}
+		//}
 
-		if (WNVBoolean(WNV))
-		{
-			outputPolygons.push_back(polygon);
-		}
+		//if (WNVBoolean(WNV))
+		//{
+		//	outputPolygons.push_back(polygon);
+		//}
+		//printPolygon(*polygon);
 	}
 }
 
@@ -118,6 +128,11 @@ Point BSPTree::FindPolygonInteriorSimple(Polygon* polygon)
 
 	// Pick the cloest axis that aligns with polygon normal
 	int axis = getCloestAxis(polygon->support.getNormal());
+
+	//char buffer[128];
+	//sprintf_s(buffer, "Find inside point simple, com and axis: %i %i %i %i", c.x, c.y, c.z, axis);
+	//MString debug(buffer);
+	//MGlobal::displayInfo(buffer);
 
 	// Line polygon intersection
 	Line line = getAxisLine(c, axis);
@@ -144,14 +159,14 @@ Point BSPTree::FindPolygonInteriorComplex(Polygon* polygon)
 		Plane p1 = polygon->bounds[i];
 		Plane p2 = polygon->bounds[(i + 1) % pointCount];
 
-		// Add random offset to move x around
+	//	// Add random offset to move x around
 		p1.d = p1.d + rand() % randomRange;
 		p2.d = p2.d + rand() % randomRange;
 		Point x = intersect(p1, p2, polygon->support);
 
 		if (isPointInPolygon(polygon, x))
 			return x;
-		
+
 		if (++iter >= 1000)
 			return x;	// Fallback return
 	}
@@ -360,20 +375,28 @@ std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 		remain = (pick1 + 1) % 3;
 	}
 
+	printPlane(xPlanes[pick0]);
+	printPlane(xPlanes[pick1]);
+	printPlane(xPlanes[remain]);
+	printPlane(refPlanes[remain]);
+	printPlane(refPlanes[pick1]);
+
 	if (!isPlaneEqual(p2, refPlanes[remain]))
 	{
-		// When second point exists
-		segments.push_back(getSegmentfromPlanes(xPlanes[pick1], refPlanes[remain], refPlanes[pick1], xPlanes[remain]));
-		if (!isPlaneEqual(refPlanes[remain], xPlanes[remain]))
-		{
-			segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
-		}
+	//// When second point exists
+	//	segments.push_back(getSegmentfromPlanes(xPlanes[pick1], refPlanes[remain], refPlanes[pick1], xPlanes[remain]));
+	//	if (!isPlaneEqual(refPlanes[remain], xPlanes[remain]))
+	//	{
+	//		segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
+	//	}
 	}
 	else
 	{
-		// Or simply connect the first intermediate point and x
+	//	// Or simply connect the first intermediate point and x
 		segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
 	}
+
+
 
 	return segments;
 }
@@ -394,7 +417,8 @@ bool BSPTree::WNVBoolean(std::vector<int> WNV)
 LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 {
 	LocalBSPNode* root = new LocalBSPNode();
-	root->polygon = leaf->polygons[mark];
+	root->polygon = leaf->polygons[index];
+	//printPolygon(*(root->polygon));
 	nodes.push_back(root);
 	mark = index; // The mark is its index in the leaf BSP node
 

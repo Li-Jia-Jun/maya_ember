@@ -18,7 +18,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnTransform.h>
 
-
 #include "ember.h"
 #include <vector>
 
