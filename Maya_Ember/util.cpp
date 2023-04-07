@@ -164,19 +164,19 @@ Segment ember::getPolygonSegment(Polygon* polygon, int index)
 
 Segment ember::getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Plane bound2)
 {
-	Point st = intersect(plane1, plane2, bound1);
-	Point ed = intersect(plane1, plane2, bound2);
-	ivec3 dir = ed.getPosition() - st.getPosition();
+	//Point st = intersect(plane1, plane2, bound1);
+	//Point ed = intersect(plane1, plane2, bound2);	
+	//ivec3 dir = ed.getPosition() - st.getPosition();
 
-	// Make sure both bounds orient outside
-	if (ivec3::dot(bound1.getNormal(), dir) > 0)
-	{
-		bound1 = Plane{-bound1.a, -bound1.b, -bound1.c, -bound1.d }; 
-	}
-	if (ivec3::dot(bound2.getNormal(), dir) < 0)
-	{
-		bound2 = Plane{ -bound2.a, -bound2.b, -bound2.c, -bound2.d };
-	}
+	//// Make sure both bounds orient outside
+	//if (ivec3::dot(bound1.getNormal(), dir) > 0)
+	//{
+	//	bound1 = Plane{-bound1.a, -bound1.b, -bound1.c, -bound1.d }; 
+	//}
+	//if (ivec3::dot(bound2.getNormal(), dir) < 0)
+	//{
+	//	bound2 = Plane{ -bound2.a, -bound2.b, -bound2.c, -bound2.d };
+	//}
 
 	return Segment{ Line{plane1, plane2}, bound1, bound2 };
 }

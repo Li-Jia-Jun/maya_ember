@@ -43,7 +43,10 @@ namespace ember
 		Point FindPolygonInteriorComplex(Polygon* polygon);
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
 		std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
-		std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
+		// LEO::to be updated with the new segment method
+		//std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
+		Segment FindPathBackToRefPoint(RefPoint ref, Point x);
+
 		bool WNVBoolean(std::vector<int> WNV);
 		
 	private:

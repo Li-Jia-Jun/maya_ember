@@ -95,8 +95,10 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 
 		//printPoint(x);
 
+		// LEO::To be updated with the new segment method
 		// Find path from x to ref point
-		std::vector<Segment> segments = FindPathBackToRefPoint(leaf->refPoint, x);
+		//std::vector<Segment> segments = FindPathBackToRefPoint(leaf->refPoint, x);
+		Segment segment = FindPathBackToRefPoint(leaf->refPoint, x);
 		
 		// Update WNV
 		//std::vector<int> WNV = leaf->refPoint.WNV;
@@ -110,11 +112,21 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 		//		WNV = TraceSegment(candidates[k], segments[j], WNV);
 		//	}
 		//}
+		
+		std::vector<int> WNV = leaf->refPoint.WNV;
 
-		//if (WNVBoolean(WNV))
-		//{
-		//	outputPolygons.push_back(polygon);
-		//}
+			for (int k = 0; k < candidates.size(); k++)
+			{
+				if (i == k)
+					continue;
+
+				WNV = TraceSegment(candidates[k], segment, WNV);
+			}
+
+		if (WNVBoolean(WNV))
+		{
+			outputPolygons.push_back(polygon);
+		}
 		//printPolygon(*polygon);
 	}
 }
@@ -335,12 +347,72 @@ std::vector<int> BSPTree::TraceSegment(Polygon* polygon, Segment segment, std::v
 	return WNV;
 }
 
-std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
+//std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
+//{
+//	// 3. Trace x back to ref point
+//	//	by constructing 1 or 2 points in between
+//	// (no point in between is impossible because a part of polygon would have been outside AABB)
+//	ivec3 xPos = x.getPosition();
+//	std::vector<Plane> xPlanes;
+//	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 1, 0, 0 }));
+//	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 1, 0 }));
+//	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 0, 1 }));
+//
+//	std::vector<Plane> refPlanes;
+//	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 1, 0, 0 }));
+//	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 1, 0 }));
+//	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 0, 1 }));
+//
+//	std::vector<Segment> segments;
+//
+//	// 3.1 - Pick the first intermediate point
+//	int pick0 = 2;
+//	Plane p0 = refPlanes[0];
+//	Plane p1 = refPlanes[1];
+//	Plane p2 = xPlanes[pick0];
+//	while (isPlaneEqual(p2, p0) || isPlaneEqual(p2, p1))
+//	{
+//		pick0 = (pick0 + 1) % 3;
+//		p2 = xPlanes[pick0];
+//	}
+//	segments.push_back(getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]));
+//
+//	// 3.2 - Pick the second intermediate point (if it exists)
+//	int pick1 = (pick0 + 1) % 3;
+//	int remain = (pick1 + 1) % 3;
+//	p2 = xPlanes[pick1];
+//	if (isPlaneEqual(p2, refPlanes[remain]))
+//	{
+//		pick1 = (pick1 + 1) % 3;
+//		remain = (pick1 + 1) % 3;
+//	}
+//
+//	if (!isPlaneEqual(p2, refPlanes[remain]))
+//	{
+//	//// When second point exists
+//		segments.push_back(getSegmentfromPlanes(xPlanes[pick1], refPlanes[remain], refPlanes[pick1], xPlanes[remain]));
+//		if (!isPlaneEqual(refPlanes[remain], xPlanes[remain]))
+//		{
+//			segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
+//		}
+//	}
+//	else
+//	{
+//	//	// Or simply connect the first intermediate point and x
+//		segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
+//	}
+//	return segments;
+//}
+
+
+Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 {
 	// 3. Trace x back to ref point
 	//	by constructing 1 or 2 points in between
 	// (no point in between is impossible because a part of polygon would have been outside AABB)
 	ivec3 xPos = x.getPosition();
+	ivec3 refPos = ref.pos;
+
 	std::vector<Plane> xPlanes;
 	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 1, 0, 0 }));
 	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 1, 0 }));
@@ -351,54 +423,35 @@ std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 1, 0 }));
 	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 0, 1 }));
 
-	std::vector<Segment> segments;
 
-	// 3.1 - Pick the first intermediate point
-	int pick0 = 2;
-	Plane p0 = refPlanes[0];
-	Plane p1 = refPlanes[1];
-	Plane p2 = xPlanes[pick0];
-	while (isPlaneEqual(p2, p0) || isPlaneEqual(p2, p1))
-	{
-		pick0 = (pick0 + 1) % 3;
-		p2 = xPlanes[pick0];
-	}
-	segments.push_back(getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]));
-
-	// 3.2 - Pick the second intermediate point (if it exists)
-	int pick1 = (pick0 + 1) % 3;
-	int remain = (pick1 + 1) % 3;
-	p2 = xPlanes[pick1];
-	if (isPlaneEqual(p2, refPlanes[remain]))
-	{
-		pick1 = (pick1 + 1) % 3;
-		remain = (pick1 + 1) % 3;
-	}
-
-	printPlane(xPlanes[pick0]);
-	printPlane(xPlanes[pick1]);
-	printPlane(xPlanes[remain]);
-	printPlane(refPlanes[remain]);
-	printPlane(refPlanes[pick1]);
-
-	if (!isPlaneEqual(p2, refPlanes[remain]))
-	{
-	//// When second point exists
-	//	segments.push_back(getSegmentfromPlanes(xPlanes[pick1], refPlanes[remain], refPlanes[pick1], xPlanes[remain]));
-	//	if (!isPlaneEqual(refPlanes[remain], xPlanes[remain]))
-	//	{
-	//		segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
-	//	}
-	}
-	else
-	{
-	//	// Or simply connect the first intermediate point and x
-		segments.push_back(getSegmentfromPlanes(xPlanes[pick0], xPlanes[pick1], xPlanes[remain], refPlanes[remain]));
-	}
+	ivec3 dir = xPos - refPos;
+	// should normalize the normal
+	//float length = sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
 
 
+	// A point on the line 
+	ivec3 p = xPos;
 
-	return segments;
+	// normal vector for the first plane that is not parallel to the line
+	ivec3 n1{ 1, 0, 0 };
+	// should check if they are parallel here
+
+	int d1 = ivec3::dot(n1, p);
+
+	// first plane 
+	Plane p1{ n1.x, n1.y, n1.z, d1 };
+
+	// normal for the second plane that is not parallel to the line
+	ivec3 n2{ 0, 1, 0 };
+
+	int d2 = ivec3::dot(n2, p);
+
+	// second plane
+	Plane p2{ n2.x, n2.y, n2.z, d2 };
+
+
+	//return getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]);
+	return getSegmentfromPlanes(p1, p2, refPlanes[0], xPlanes[0]);
 }
 
 bool BSPTree::WNVBoolean(std::vector<int> WNV)
