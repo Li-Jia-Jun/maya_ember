@@ -17,6 +17,9 @@
 #include <maya/MFnMeshData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnTransform.h>
+#include <maya/MPlug.h>
+#include <maya/MFnAttribute.h>
+#include <maya/M3dView.h>
 
 #include "ember.h"
 #include <vector>

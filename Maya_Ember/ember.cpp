@@ -29,6 +29,7 @@ void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<
 void EMBER::SetInitBound(AABB bound)
 {
 	initBound = bound;
+	//drawBoundingBox(bound);
 }
 
 void EMBER::BuildBSPTree()

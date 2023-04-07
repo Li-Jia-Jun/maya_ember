@@ -2,6 +2,17 @@
 #include "geometry.h"
 #include <utility>
 
+#include <maya/MObject.h>
+#include <maya/MGlobal.h>
+#include <maya/MPointArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MPoint.h>
+#include <maya/MString.h>
+#include <maya/MFnTransform.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
+
+
 namespace ember
 {
 	// ======== Configure =============
@@ -9,6 +20,8 @@ namespace ember
 #define LEAF_POLYGON_COUNT (25)
 
 #define AABB_ADJUST (10)
+
+#define BIG_NUM 10000
 
 	// ==================================
 
@@ -92,7 +105,7 @@ namespace ember
 	void printPoint(Point);
 	void printPlane(Plane);
 	void printPolygon(Polygon);
-
+	void drawBoundingBox(AABB);
 }
 
 

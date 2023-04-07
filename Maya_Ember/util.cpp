@@ -2,6 +2,7 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+
 using namespace ember;
 
 
@@ -164,19 +165,19 @@ Segment ember::getPolygonSegment(Polygon* polygon, int index)
 
 Segment ember::getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Plane bound2)
 {
-	//Point st = intersect(plane1, plane2, bound1);
-	//Point ed = intersect(plane1, plane2, bound2);	
-	//ivec3 dir = ed.getPosition() - st.getPosition();
+	Point st = intersect(plane1, plane2, bound1);
+	Point ed = intersect(plane1, plane2, bound2);	
+	ivec3 dir = ed.getPosition() - st.getPosition();
 
-	//// Make sure both bounds orient outside
-	//if (ivec3::dot(bound1.getNormal(), dir) > 0)
-	//{
-	//	bound1 = Plane{-bound1.a, -bound1.b, -bound1.c, -bound1.d }; 
-	//}
-	//if (ivec3::dot(bound2.getNormal(), dir) < 0)
-	//{
-	//	bound2 = Plane{ -bound2.a, -bound2.b, -bound2.c, -bound2.d };
-	//}
+	// Make sure both bounds orient outside
+	if (ivec3::dot(bound1.getNormal(), dir) > 0)
+	{
+		bound1 = Plane{-bound1.a, -bound1.b, -bound1.c, -bound1.d }; 
+	}
+	if (ivec3::dot(bound2.getNormal(), dir) < 0)
+	{
+		bound2 = Plane{ -bound2.a, -bound2.b, -bound2.c, -bound2.d };
+	}
 
 	return Segment{ Line{plane1, plane2}, bound1, bound2 };
 }
@@ -484,3 +485,64 @@ void ember::printPolygon(ember::Polygon p)
 	}
 }
 
+void ember::drawBoundingBox(AABB boundingBox)
+{
+
+	float maxX = (float)boundingBox.max.x / BIG_NUM;
+	float maxY = (float)boundingBox.max.y / BIG_NUM;
+	float maxZ = (float)boundingBox.max.z / BIG_NUM;
+	float minX = (float)boundingBox.min.x / BIG_NUM;
+	float minY = (float)boundingBox.min.y / BIG_NUM;
+	float minZ = (float)boundingBox.min.z / BIG_NUM;
+
+	MPointArray vertices;
+	vertices.append(MPoint(minX, maxY, maxZ));
+	vertices.append(MPoint(maxX, maxY, maxZ));
+	vertices.append(MPoint(maxX, minY, maxZ));
+	vertices.append(MPoint(minX, minY, maxZ));
+	vertices.append(MPoint(minX, maxY, minZ));
+	vertices.append(MPoint(maxX, maxY, minZ));
+	vertices.append(MPoint(maxX, minY, minZ));
+	vertices.append(MPoint(minX, minY, minZ));
+
+	// num of verts for each face
+	MIntArray vertCount;
+	for (int i = 0; i < 6; i++)
+	{
+		vertCount.append(4);
+	}
+
+	int faceConnectsArray[] = { 3, 2, 1, 0, 2, 6, 5, 1, 6, 7, 4, 5, 7, 3, 0, 4, 0, 1, 5, 4, 7, 6, 2, 3 };
+	MIntArray vertList(faceConnectsArray, 24);
+
+	MFnMesh meshFn;
+
+	MIntArray faceList;
+	for (int i = 0; i < 6; i++)
+	{
+		faceList.append(i);
+	}
+
+	MFnTransform transformFn;
+	MObject transformObj = transformFn.create();
+	transformFn.setName("BooleanaResult");
+
+
+	MObject meshObj = meshFn.create(
+		vertices.length(),	// num of verts
+		vertCount.length(),	// num of polygons
+		vertices,	// vert pos array
+		vertCount,	// polygon count array
+		vertList,	// polygon connects
+		transformObj	//parent object
+	);
+	meshFn.setName("ResultShape");
+	MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
+
+
+	MFnDependencyNode meshNode(meshObj);
+	MPlug overrideEnabledPlug = meshNode.findPlug("overrideEnabled", true);
+	overrideEnabledPlug.setValue(1);
+	MPlug overrideShadingPlug = meshNode.findPlug("overrideShading", true);
+	overrideShadingPlug.setValue(0);
+}

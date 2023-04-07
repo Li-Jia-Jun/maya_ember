@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include "util.h"
 namespace ember
 {
 	struct ivec3
@@ -70,7 +69,10 @@ namespace ember
 			return ivec3{ int(-x1 / x4), int(-x2 / x4), int(-x3 / x4) };
 		}
 	};
-
+	struct AABB
+	{
+		ivec3 min, max;
+	};
 	struct Plane
 	{
 		// ax + by + cz + d = 0

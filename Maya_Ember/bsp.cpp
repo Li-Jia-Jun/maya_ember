@@ -55,6 +55,8 @@ void BSPTree::Build(BSPNode* rootNode)
 		}
 	}
 
+	// Draw all the sub bounding boxes by iterating all the nodes and draw their AABB
+
 	// Handle leaf node
 	for (int i = 0; i < nodes.size(); i++)
 	{
@@ -451,7 +453,7 @@ Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 
 
 	//return getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]);
-	return getSegmentfromPlanes(p1, p2, refPlanes[0], xPlanes[0]);
+	return getSegmentfromPlanes(p1, p2, refPlanes[2], xPlanes[2]);
 }
 
 bool BSPTree::WNVBoolean(std::vector<int> WNV)

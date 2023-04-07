@@ -143,12 +143,12 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		//MGlobal::displayInfo(buffer);
 		
 		// The algorithm starts here
-		ember.BuildBSPTree();
+		//ember.BuildBSPTree();
 
 
-		//// Try drawing a simple box with some given verts
-		//
-		//// It seems that the vert must be counter clock wise
+		// Try drawing a simple box with some given verts
+		
+		// It seems that the vert must be counter clock wise
 		//MPointArray vertices;
 		//vertices.append(MPoint(-0.5, 0.5, 0.5));
 		//vertices.append(MPoint(0.5, 0.5, 0.5));
@@ -192,6 +192,13 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		//);
 		//meshFn.setName("ResultShape");
 		//MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
+
+
+		//MFnDependencyNode meshNode(meshObj);
+		//MPlug overrideEnabledPlug = meshNode.findPlug("overrideEnabled", true, &status);
+		//overrideEnabledPlug.setValue(1);
+		//MPlug overrideShadingPlug = meshNode.findPlug("overrideShading", true, &status);
+		//overrideShadingPlug.setValue(0);
 
 
 	return status;

@@ -5,10 +5,7 @@ namespace ember
 {
 	class LocalBSPTree;
 
-	struct AABB 
-	{
-		ivec3 min, max;
-	};
+
 
 	struct RefPoint
 	{
