@@ -105,6 +105,7 @@ namespace ember
 	void printPoint(Point);
 	void printPlane(Plane);
 	void printPolygon(Polygon);
+	void drawPlane(Plane);
 	void drawBoundingBox(AABB);
 }
 

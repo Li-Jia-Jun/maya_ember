@@ -485,6 +485,11 @@ void ember::printPolygon(ember::Polygon p)
 	}
 }
 
+void ember::drawPlane(Plane p)
+{
+
+}
+
 void ember::drawBoundingBox(AABB boundingBox)
 {
 
@@ -525,7 +530,7 @@ void ember::drawBoundingBox(AABB boundingBox)
 
 	MFnTransform transformFn;
 	MObject transformObj = transformFn.create();
-	transformFn.setName("BooleanaResult");
+	transformFn.setName("BoundingBox");
 
 
 	MObject meshObj = meshFn.create(
@@ -536,9 +541,8 @@ void ember::drawBoundingBox(AABB boundingBox)
 		vertList,	// polygon connects
 		transformObj	//parent object
 	);
-	meshFn.setName("ResultShape");
-	MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
-
+	meshFn.setName("BoxShape");
+	MGlobal::executeCommand("sets -add initialShadingGroup BoxShape;");
 
 	MFnDependencyNode meshNode(meshObj);
 	MPlug overrideEnabledPlug = meshNode.findPlug("overrideEnabled", true);

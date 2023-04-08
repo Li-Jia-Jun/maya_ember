@@ -56,19 +56,23 @@ void BSPTree::Build(BSPNode* rootNode)
 	}
 
 	// Draw all the sub bounding boxes by iterating all the nodes and draw their AABB
+	//for (int i = 0; i < nodes.size(); ++i)
+	//{
+	//	drawBoundingBox(nodes[i]->bound);
+	//}
 
 	// Handle leaf node
-	for (int i = 0; i < nodes.size(); i++)
-	{
-		BSPNode* leaf = nodes[i];
-		if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
-		{
-			continue;
-		}
+	//for (int i = 0; i < nodes.size(); i++)
+	//{
+	//	BSPNode* leaf = nodes[i];
+	//	if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
+	//	{
+	//		continue;
+	//	}
 
-		BuildLocalBSP(leaf);
-		FaceClassification(leaf);
-	}
+	//	BuildLocalBSP(leaf);
+	//	FaceClassification(leaf);
+	//}
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
