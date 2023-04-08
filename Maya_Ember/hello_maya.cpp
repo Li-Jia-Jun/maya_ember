@@ -3,7 +3,7 @@
 
 // define EXPORT for exporting dll functions
 #define EXPORT _declspec(dllexport)
-#define BIG_NUM 10000
+#define BIG_NUM 1000
 
 // Maya Plugin creator function
 void* helloMaya::creator()
@@ -48,15 +48,11 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			// Get the normal and verts of the current face
 			polygonIt.getPoints(pointArray, MSpace::kObject, &status);
 			polygonIt.getNormal(normal, MSpace::kObject);
-			ember::ivec3 emberNormal;
-			emberNormal.x = normal.x;
-			emberNormal.y = normal.y;
-			emberNormal.z = normal.z;
+			ember::ivec3 emberNormal{ normal.x, normal.y, normal.z };
 			normals.push_back(emberNormal);
 			//printIvec3(emberNormal);
 
-			// Each triangles have 3 vertices
-			std::vector<ember::ivec3 > emberVerts;
+			std::vector<ember::ivec3 > polyVerts;
 		
 			for (int k = 0; k < polygonIt.polygonVertexCount(); k++)
 			{
@@ -87,14 +83,15 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				}
 
 				// Scale the vert pos to a big enough number
-				ember::ivec3 emberVert;
-				emberVert.x = point.x * BIG_NUM;
-				emberVert.y = point.y * BIG_NUM;
-				emberVert.z = point.z * BIG_NUM;
-				emberVerts.push_back(emberVert);
-				//ember::printIvec3(emberVert);
+				ember::ivec3 vert;
+				vert.x = point.x * BIG_NUM;
+				vert.y = point.y * BIG_NUM;
+				vert.z = point.z * BIG_NUM;
+				polyVerts.push_back(vert);
+				//ember::printNum(k);
+				//ember::printIvec3(vert);
 			}
-			vertices.push_back(emberVerts);
+			vertices.push_back(polyVerts);
 		}
 
 		// Load the data into an ember
@@ -102,7 +99,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 	}
 
 		ember::AABB bound;
-		int offset = 100;
+		int offset = 1;
 		bound.max.x = maxX * BIG_NUM + offset;
 		bound.max.y = maxY * BIG_NUM + offset;
 		bound.max.z = maxZ * BIG_NUM + offset;
@@ -111,10 +108,10 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		bound.min.z = minZ * BIG_NUM - offset;
 		ember.SetInitBound(bound);
 		// LEO::TODO::currently this only works for the original mesh. If it has transformation it will break
-		drawBoundingBox(bound);
+		//drawBoundingBox(bound);
 		
 		// The algorithm starts here
-		ember.BuildBSPTree();
+		//ember.BuildBSPTree();
 
 	return status;
 }

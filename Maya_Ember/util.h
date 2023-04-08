@@ -21,7 +21,7 @@ namespace ember
 
 #define AABB_ADJUST (10)
 
-#define BIG_NUM 10000
+#define BIG_NUM 1000
 
 	// ==================================
 
@@ -100,12 +100,12 @@ namespace ember
 
 	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
 
-
+	void printNum(int);
 	void printIvec3(ivec3);
 	void printPoint(Point);
 	void printPlane(Plane);
 	void printPolygon(Polygon);
-	void drawPlane(Plane);
+	void drawPolygon(Polygon*);
 	void drawBoundingBox(AABB);
 }
 

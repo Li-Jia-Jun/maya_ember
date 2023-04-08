@@ -18,12 +18,6 @@ BSPTree::~BSPTree()
 
 void BSPTree::Build(BSPNode* rootNode)
 {
-
-	//for (int i = 0; i < rootNode->polygons.size(); i++)
-	//{
-	//	printPolygon(*rootNode->polygons[i]);
-	//}
-
 	nodes.clear();
 	nodes.push_back(rootNode);
 
@@ -62,17 +56,17 @@ void BSPTree::Build(BSPNode* rootNode)
 	//}
 
 	// Handle leaf node
-	//for (int i = 0; i < nodes.size(); i++)
-	//{
-	//	BSPNode* leaf = nodes[i];
-	//	if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
-	//	{
-	//		continue;
-	//	}
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		BSPNode* leaf = nodes[i];
+		if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
+		{
+			continue;
+		}
 
-	//	BuildLocalBSP(leaf);
-	//	FaceClassification(leaf);
-	//}
+		BuildLocalBSP(leaf);
+		FaceClassification(leaf);
+	}
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)

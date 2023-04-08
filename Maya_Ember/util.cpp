@@ -420,7 +420,6 @@ Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int 
 	int count = posVec.size();
 	for (int i = 0; i < count; i++)
 	{
-		//MGlobal::displayInfo("NEW ITERATION");
 
 		ivec3 p1 = posVec[i];
 		ivec3 p2 = posVec[(i + 1) % count];
@@ -444,12 +443,17 @@ Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int 
 	return new Polygon{ meshId, support, bounds };
 }
 
+void ember::printNum(int n)
+{
+	char buffer[32];
+	sprintf_s(buffer, "num: %i", n);
+	MGlobal::displayInfo(buffer);
+}
 
 void ember::printIvec3(ember::ivec3 v)
 {
 	char buffer[128];
 	sprintf_s(buffer, "ivec3: %i %i %i", v.x, v.y, v.z);
-	MString debug(buffer);
 	MGlobal::displayInfo(buffer);
 }
 
@@ -457,7 +461,6 @@ void ember::printPoint(ember::Point p)
 {
 	char buffer[128];
 	sprintf_s(buffer, "x1: %i x2: %i x3: %i x4: %i", p.x1, p.x2, p.x3, p.x4);
-	MString debug(buffer);
 	MGlobal::displayInfo(buffer);
 }
 
@@ -465,7 +468,6 @@ void ember::printPlane(ember::Plane p)
 {
 	char buffer[128];
 	sprintf_s(buffer, "a: %i b: %i c: %i d: %i", p.a, p.b, p.c, p.d);
-	MString debug(buffer);
 	MGlobal::displayInfo(buffer);
 }
 
@@ -473,7 +475,6 @@ void ember::printPolygon(ember::Polygon p)
 {
 	char buffer[128];
 	sprintf_s(buffer, "support plane: ");
-	MString debug(buffer);
 	MGlobal::displayInfo(buffer);
 	ember::printPlane(p.support);
 
@@ -485,10 +486,49 @@ void ember::printPolygon(ember::Polygon p)
 	}
 }
 
-void ember::drawPlane(Plane p)
+void ember::drawPolygon(Polygon* p)
 {
+	int numVerts = p->bounds.size();
+	printNum(numVerts);
 
+	MPointArray vertices;
+	MIntArray vertCount;
+	MIntArray vertList;
+	vertCount.append(numVerts);
+	printNum(vertCount[0]);
+
+	for (int i = 0; i < numVerts; i++)
+	{
+		Point vert = getPolygonPoint(p, i);
+		printPoint(vert);
+		ivec3 vertPos = vert.getPosition();
+		printIvec3(vertPos);
+		vertices.append(MPoint((float)vertPos.x / BIG_NUM, (float)vertPos.y / BIG_NUM, (float)vertPos.z / BIG_NUM));
+		vertList.append(i);
+		printNum(i);
+	}
+
+	MFnTransform transformFn;
+	MFnMesh meshFn;
+
+	MObject transformObj = transformFn.create();
+	transformFn.setName("Polygon0");
+
+	MObject meshObj = meshFn.create(
+		numVerts,	// num of verts
+		1,	// num of polygons
+		vertices,	// vert pos array
+		vertCount,	// polygon count array
+		vertList,	// polygon connects
+		transformObj	//parent object
+	);
+	MString shapeName = transformFn.name() + "Shape";
+	
+	meshFn.setName(shapeName);
+	MGlobal::executeCommand("sets -add initialShadingGroup " + shapeName + ";");
 }
+
+
 
 void ember::drawBoundingBox(AABB boundingBox)
 {
@@ -521,12 +561,6 @@ void ember::drawBoundingBox(AABB boundingBox)
 	MIntArray vertList(faceConnectsArray, 24);
 
 	MFnMesh meshFn;
-
-	MIntArray faceList;
-	for (int i = 0; i < 6; i++)
-	{
-		faceList.append(i);
-	}
 
 	MFnTransform transformFn;
 	MObject transformObj = transformFn.create();
