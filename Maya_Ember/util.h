@@ -100,6 +100,7 @@ namespace ember
 
 	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
 
+	void printStr(const char*);
 	void printNum(int);
 	void printIvec3(ivec3);
 	void printPoint(Point);

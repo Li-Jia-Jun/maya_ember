@@ -409,10 +409,8 @@ int ember::classify(Point x, Plane s)
 Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
 {
 	// Compute support plane
-	//printIvec3(normal);
 	ivec3 p0 = posVec[0];
 	Plane support = Plane::fromPositionNormal(p0, normal);
-	//printPlane(support);
 
 	// Compute bound plane for each edge
 	// (assume that bound plane is perpendicular to support plane)
@@ -420,27 +418,24 @@ Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int 
 	int count = posVec.size();
 	for (int i = 0; i < count; i++)
 	{
-
 		ivec3 p1 = posVec[i];
 		ivec3 p2 = posVec[(i + 1) % count];
 		ivec3 edgeDir = p2 - p1;
 
-		//printIvec3(p1);
-		//printIvec3(p2);
-		//printIvec3(edgeDir);
-
-
 		// If the vertex order follows the right hand rule
 		// the calculated bound plane normal will orient outside
 		ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);
-
-		//printIvec3(nor);
-
 		bounds.push_back(Plane::fromPositionNormal(p1, nor));
-		//printPlane(bounds[i]);
 	}
 
 	return new Polygon{ meshId, support, bounds };
+}
+
+void ember::printStr(const char* str)
+{
+	char buffer[128];
+	sprintf_s(buffer, str);
+	MGlobal::displayInfo(buffer);
 }
 
 void ember::printNum(int n)
@@ -501,6 +496,13 @@ void ember::drawPolygon(Polygon* p)
 	{
 		Point vert = getPolygonPoint(p, i);
 		printPoint(vert);
+
+		if (vert.x4 == 0)
+		{
+			printStr("detect x4 == 0, change it to 1");
+			vert.x4 = 1;
+		}
+
 		ivec3 vertPos = vert.getPosition();
 		printIvec3(vertPos);
 		vertices.append(MPoint((float)vertPos.x / BIG_NUM, (float)vertPos.y / BIG_NUM, (float)vertPos.z / BIG_NUM));
