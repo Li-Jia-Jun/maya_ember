@@ -17,7 +17,7 @@ namespace ember
 {
 	// ======== Configure =============
 	
-#define LEAF_POLYGON_COUNT (25)
+#define LEAF_POLYGON_COUNT (8)
 
 #define AABB_ADJUST (10)
 
@@ -28,14 +28,14 @@ namespace ember
 
 	// ======== Basic Math =============
 
-	int multiply(Point x, Plane s);
+	long long int multiply(Point x, Plane s);
 
-	int sign(int value);
+	int sign(long long int value);
 
-	int determiant3x3(
-		int a, int b, int c,
-		int d, int e, int f,
-		int g, int h, int i);
+	long long int determiant3x3(
+		long long int a, long long int b, long long int c,
+		long long int d, long long int e, long long int f,
+		long long int g, long long int h, long long int i);
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
@@ -96,12 +96,12 @@ namespace ember
 
 	Point intersect(Plane p, Plane q, Plane r);
 
-	int classify(Point x, Plane s);
+	long long int classify(Point x, Plane s);
 
 	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
 
 	void printStr(const char*);
-	void printNum(int);
+	void printNum(long long int);
 	void printIvec3(ivec3);
 	void printPoint(Point);
 	void printPlane(Plane);

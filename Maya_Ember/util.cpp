@@ -1,32 +1,34 @@
 #include "util.h"
 
+#include <string>
+
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
 using namespace ember;
 
 
-int ember::multiply(Point x, Plane s)
+long long int ember::multiply(Point x, Plane s)
 {
 	// Not sure if this works
 	return x.x1 * s.a + x.x2 * s.b + x.x3 * s.c + x.x4 * s.d;
 }
 
-int ember::sign(int value)
+int ember::sign(long long int value)
 {
 	if (value > 0) return 1;
 	else if (value < 0) return -1;
 	else return 0;
 }
 
-int ember::determiant3x3(
-	int a, int b, int c,
-	int d, int e, int f,
-	int g, int h, int i)
+long long int ember::determiant3x3(
+	long long int a, long long int b, long long int c,
+	long long int d, long long int e, long long int f,
+	long long int g, long long int h, long long int i)
 {
-	int t1 = a * (e * i - f * h);
-	int t2 = b * (d * i - f * g);
-	int t3 = c * (d * h - e * g);
+	long long int t1 = a * (e * i - f * h);
+	long long int t2 = b * (d * i - f * g);
+	long long int t3 = c * (d * h - e * g);
 	return t1 - t2 + t3;
 }
 
@@ -82,7 +84,7 @@ bool ember::isPointInPolygon(Polygon* polygon, Point point)
 {
 	for (int i = 0; i < polygon->bounds.size(); i++)
 	{
-		int c = classify(point, polygon->bounds[i]);
+		long long int c = classify(point, polygon->bounds[i]);
 		if (c >= 0)	// Points on polygon edge are also considered 'exterior'
 		{
 			return false;
@@ -93,9 +95,9 @@ bool ember::isPointInPolygon(Polygon* polygon, Point point)
 
 int ember::getCloestAxis(ivec3 dir)
 {
-	int x = abs(dir.x);
-	int y = abs(dir.y);
-	int z = abs(dir.z);
+	long long int x = abs(dir.x);
+	long long int y = abs(dir.y);
+	long long int z = abs(dir.z);
 
 	if (x > y && x > z)
 	{
@@ -137,9 +139,9 @@ Line ember::getAxisLine(ivec3 pos, int axis)
 Point ember::getPointfromPosition(ivec3 pos)
 {
 	// Build point as intersection of three axis planes
-	Plane xy{ 0, 0, 1, -pos.z };
-	Plane yz{ 1, 0, 0, -pos.x };
-	Plane zx{ 0, 1, 0, -pos.y };
+	Plane xy( 0, 0, 1, -pos.z );
+	Plane yz( 1, 0, 0, -pos.x );
+	Plane zx( 0, 1, 0, -pos.y );
 	return intersect(xy, yz, zx);
 }
 
@@ -172,11 +174,11 @@ Segment ember::getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Pl
 	// Make sure both bounds orient outside
 	if (ivec3::dot(bound1.getNormal(), dir) > 0)
 	{
-		bound1 = Plane{-bound1.a, -bound1.b, -bound1.c, -bound1.d }; 
+		bound1 = Plane(-bound1.a, -bound1.b, -bound1.c, -bound1.d ); 
 	}
 	if (ivec3::dot(bound2.getNormal(), dir) < 0)
 	{
-		bound2 = Plane{ -bound2.a, -bound2.b, -bound2.c, -bound2.d };
+		bound2 = Plane( -bound2.a, -bound2.b, -bound2.c, -bound2.d );
 	}
 
 	return Segment{ Line{plane1, plane2}, bound1, bound2 };
@@ -278,8 +280,16 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 		Plane bound1 = polygon->bounds[(j - 1 + boundSize) % boundSize];
 		Plane bound2 = polygon->bounds[(j + 1) % boundSize];
 
-		int c1 = classify(intersect(polygon->support, edgePlane, bound1), splitPlane);
-		int c2 = classify(intersect(polygon->support, edgePlane, bound2), splitPlane);
+		Point p1 = intersect(polygon->support, edgePlane, bound1);
+		Point p2 = intersect(polygon->support, edgePlane, bound2);
+		long long int c1 = classify(p1, splitPlane);
+		long long int c2 = classify(p2, splitPlane);
+
+		printStr("bound point 1 2:");
+		printPoint(p1);
+		printPoint(p2);
+		//printPlane(bound1);
+		//printPlane(bound2);
 
 		if (c1 <= 0 && c2 <= 0)
 		{
@@ -362,8 +372,8 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 	}
 
 	// If intersection point is not within segment
-	int c1 = classify(x, segment.bound1);
-	int c2 = classify(x, segment.bound2);
+	long long int c1 = classify(x, segment.bound1);
+	long long int c2 = classify(x, segment.bound2);
 	if (c1 >= 0 || c2 >= 0) // Points right on the segment end are considered 'exterior'
 	{
 		x.x4 = 0; 
@@ -374,35 +384,34 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 
 Point ember::intersect(Plane p, Plane q, Plane r)
 {
-	int x1 = determiant3x3(
+	long long int x1 = determiant3x3(
 		p.d, p.b, p.c,
 		q.d, q.b, q.c,
 		r.d, r.b, r.c);
 
-	int x2 = determiant3x3(
+	long long int x2 = determiant3x3(
 		p.a, p.d, p.c,
 		q.a, q.d, q.c,
 		r.a, r.d, r.c);
 
-	int x3 = determiant3x3(
+	long long int x3 = determiant3x3(
 		p.a, p.b, p.d,
 		q.a, q.b, q.d,
 		r.a, r.b, r.d);
 
-	int x4 = determiant3x3(
+	long long int x4 = determiant3x3(
 		p.a, p.b, p.c,
 		q.a, q.b, q.c,
 		r.a, r.b, r.c);
 
-	return { x1, x2, x3, x4 };
+	return Point(x1, x2, x3, x4);
 }
 
-int ember::classify(Point x, Plane s)
+long long int ember::classify(Point x, Plane s)
 {
 	// Return 1 means x on the positive side of s
 	// Return -1 means x on the negative side of s
 	// Return 0 means x on s	
-	return 0;
 	return sign(multiply(x, s)) * sign(x.x4);
 }
 
@@ -438,31 +447,31 @@ void ember::printStr(const char* str)
 	MGlobal::displayInfo(buffer);
 }
 
-void ember::printNum(int n)
+void ember::printNum(long long int n)
 {
 	char buffer[32];
-	sprintf_s(buffer, "num: %i", n);
+	sprintf_s(buffer, "num: %lld", n);
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printIvec3(ember::ivec3 v)
 {
 	char buffer[128];
-	sprintf_s(buffer, "ivec3: %i %i %i", v.x, v.y, v.z);
+	sprintf_s(buffer, "ivec3: %lld %lld %lld", v.x, v.y, v.z);
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPoint(ember::Point p)
 {
 	char buffer[128];
-	sprintf_s(buffer, "x1: %i x2: %i x3: %i x4: %i", p.x1, p.x2, p.x3, p.x4);
+	sprintf_s(buffer, "x1: %lld x2: %lld x3: %lld x4: %lld", p.x1, p.x2, p.x3, p.x4);
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPlane(ember::Plane p)
 {
 	char buffer[128];
-	sprintf_s(buffer, "a: %i b: %i c: %i d: %i", p.a, p.b, p.c, p.d);
+	sprintf_s(buffer, "a: %lld b: %lld c: %lld d: %lld", p.a, p.b, p.c, p.d);
 	MGlobal::displayInfo(buffer);
 }
 
@@ -484,18 +493,18 @@ void ember::printPolygon(ember::Polygon p)
 void ember::drawPolygon(Polygon* p)
 {
 	int numVerts = p->bounds.size();
-	printNum(numVerts);
+	//printNum(numVerts);
 
 	MPointArray vertices;
 	MIntArray vertCount;
 	MIntArray vertList;
 	vertCount.append(numVerts);
-	printNum(vertCount[0]);
+	//printNum(vertCount[0]);
 
 	for (int i = 0; i < numVerts; i++)
 	{
 		Point vert = getPolygonPoint(p, i);
-		printPoint(vert);
+		//printPoint(vert);
 
 		if (vert.x4 == 0)
 		{
@@ -504,10 +513,10 @@ void ember::drawPolygon(Polygon* p)
 		}
 
 		ivec3 vertPos = vert.getPosition();
-		printIvec3(vertPos);
+		//printIvec3(vertPos);
 		vertices.append(MPoint((float)vertPos.x / BIG_NUM, (float)vertPos.y / BIG_NUM, (float)vertPos.z / BIG_NUM));
 		vertList.append(i);
-		printNum(i);
+		//printNum(i);
 	}
 
 	MFnTransform transformFn;
@@ -530,10 +539,9 @@ void ember::drawPolygon(Polygon* p)
 	MGlobal::executeCommand("sets -add initialShadingGroup " + shapeName + ";");
 }
 
-
-
 void ember::drawBoundingBox(AABB boundingBox)
 {
+	static int count = 0;
 
 	float maxX = (float)boundingBox.max.x / BIG_NUM;
 	float maxY = (float)boundingBox.max.y / BIG_NUM;
@@ -566,7 +574,9 @@ void ember::drawBoundingBox(AABB boundingBox)
 
 	MFnTransform transformFn;
 	MObject transformObj = transformFn.create();
-	transformFn.setName("BoundingBox");
+	std::string transformName = "BoundingBox";
+	transformName.append(std::to_string(count));
+	transformFn.setName(transformName.c_str());
 
 
 	MObject meshObj = meshFn.create(
@@ -577,12 +587,20 @@ void ember::drawBoundingBox(AABB boundingBox)
 		vertList,	// polygon connects
 		transformObj	//parent object
 	);
-	meshFn.setName("BoxShape");
-	MGlobal::executeCommand("sets -add initialShadingGroup BoxShape;");
+
+	std::string meshName = "BoxShape";
+	meshName.append(std::to_string(count));
+	meshFn.setName(meshName.c_str());
+	std::string commandStr = "sets -add initialShadingGroup ";
+	commandStr.append(meshName);
+	commandStr.append(";");
+	MGlobal::executeCommand(commandStr.c_str());
 
 	MFnDependencyNode meshNode(meshObj);
 	MPlug overrideEnabledPlug = meshNode.findPlug("overrideEnabled", true);
 	overrideEnabledPlug.setValue(1);
 	MPlug overrideShadingPlug = meshNode.findPlug("overrideShading", true);
 	overrideShadingPlug.setValue(0);
+
+	count++;
 }

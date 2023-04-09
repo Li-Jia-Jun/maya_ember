@@ -14,16 +14,15 @@ void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<
 	}
 	meshId++;
 
-	for (int i = 0; i < polygons.size(); i++)
-	{
-		drawPolygon(polygons[i]);
-	}
+	//for (int i = 0; i < polygons.size(); i++)
+	//{
+	//	drawPolygon(polygons[i]);
+	//}
 }
 
 void EMBER::SetInitBound(AABB bound)
 {
 	initBound = bound;
-	//drawBoundingBox(bound);
 }
 
 void EMBER::BuildBSPTree()

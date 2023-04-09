@@ -3,7 +3,7 @@
 
 // define EXPORT for exporting dll functions
 #define EXPORT _declspec(dllexport)
-#define BIG_NUM 1000
+
 
 // Maya Plugin creator function
 void* helloMaya::creator()
@@ -48,9 +48,8 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			// Get the normal and verts of the current face
 			polygonIt.getPoints(pointArray, MSpace::kObject, &status);
 			polygonIt.getNormal(normal, MSpace::kObject);
-			ember::ivec3 emberNormal{ normal.x, normal.y, normal.z };
+			ember::ivec3 emberNormal{ normal.x * BIG_NUM, normal.y * BIG_NUM, normal.z * BIG_NUM };
 			normals.push_back(emberNormal);
-			//printIvec3(emberNormal);
 
 			std::vector<ember::ivec3 > polyVerts;
 		
@@ -110,8 +109,13 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		// LEO::TODO::currently this only works for the original mesh. If it has transformation it will break
 		//drawBoundingBox(bound);
 		
+		//drawBoundingBox(bound);
+		//bound.max = bound.max + ember::ivec3{ 5000, 5000, 5000 };
+		//drawBoundingBox(bound);
+		
+
 		// The algorithm starts here
-		//ember.BuildBSPTree();
+		ember.BuildBSPTree();
 
 	return status;
 }

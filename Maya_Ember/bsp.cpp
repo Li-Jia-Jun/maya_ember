@@ -24,6 +24,7 @@ void BSPTree::Build(BSPNode* rootNode)
 	// Create tree nodes recursively (in breadth first order)
 	std::vector<BSPNode*> toTraverse;
 	toTraverse.push_back(rootNode);
+	int tempCount = 0;
 	while (!toTraverse.empty())
 	{	
 		BSPNode* node = toTraverse.back();
@@ -47,6 +48,11 @@ void BSPTree::Build(BSPNode* rootNode)
 			toTraverse.push_back(node->rightChild);
 			nodes.push_back(node->rightChild);
 		}
+
+		if (tempCount++ >= 20)
+		{
+			break;
+		}
 	}
 
 	// Draw all the sub bounding boxes by iterating all the nodes and draw their AABB
@@ -56,17 +62,17 @@ void BSPTree::Build(BSPNode* rootNode)
 	//}
 
 	// Handle leaf node
-	for (int i = 0; i < nodes.size(); i++)
-	{
-		BSPNode* leaf = nodes[i];
-		if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
-		{
-			continue;
-		}
+	//for (int i = 0; i < nodes.size(); i++)
+	//{
+	//	BSPNode* leaf = nodes[i];
+	//	if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
+	//	{
+	//		continue;
+	//	}
 
-		BuildLocalBSP(leaf);
-		FaceClassification(leaf);
-	}
+	//	BuildLocalBSP(leaf);
+	//	FaceClassification(leaf);
+	//}
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -197,31 +203,36 @@ void BSPTree::Split(BSPNode* node)
 {
 	// Split by the midpoint of the longest length
 	// The split plane always orient along positive axis
-	int axis, midValue;
+	int axis;
+	long long int midValue;
 	Plane splitPlane;
 	ivec3 min = node->bound.min;
 	ivec3 max = node->bound.max;
-	int boundX = max.x - min.x;
-	int boundY = max.y - min.y;
-	int boundZ = max.z - min.z;
+	long long int boundX = max.x - min.x;
+	long long int boundY = max.y - min.y;
+	long long int boundZ = max.z - min.z;
 	if (boundX > boundY && boundX > boundZ)
 	{
 		axis = 0;
-		midValue = int((min.x + max.x) * 0.5f);
+		midValue = long long int((min.x + max.x) * 0.5f);
 		splitPlane = Plane::fromPositionNormal(ivec3{ midValue, min.y, min.z }, ivec3{ 1, 0, 0 });
 	}
 	else if (boundY > boundX && boundY > boundZ)
 	{
 		axis = 1;
-		midValue = int((min.y + max.y) * 0.5f);
+		midValue = long long int((min.y + max.y) * 0.5f);
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, midValue, min.z }, ivec3{ 0, 1, 0 });
 	}
 	else
 	{
 		axis = 2;
-		midValue = int((min.z + max.z) * 0.5f);
+		midValue = long long int((min.z + max.z) * 0.5f);
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
+
+	printStr("split plane:");
+	printPlane(splitPlane);
+	
 
 	// Divide polygons by split plane
 	std::vector<Polygon*> leftPolygons;
@@ -267,29 +278,29 @@ void BSPTree::Split(BSPNode* node)
 	// Right Node
 	// - Min bound changes to middle points
 	// - Trace new RefPoint
-	if (rightPolygons.size() > 0)
-	{
-		BSPNode* rightNode = new BSPNode();
-		rightNode->polygons = rightPolygons;
+	//if (rightPolygons.size() > 0)
+	//{
+	//	BSPNode* rightNode = new BSPNode();
+	//	rightNode->polygons = rightPolygons;
 
-		switch (axis)
-		{
-		case 0:
-			rightNode->bound = AABB{ ivec3{midValue, min.y, min.z}, max };
-			break;
-		case 1:
-			rightNode->bound = AABB{ ivec3{min.x, midValue, min.z}, max };
-			break;
-		case 2:
-			rightNode->bound = AABB{ ivec3{min.x, min.y, midValue}, max };
-			break;
-		default:
-			break;
-		}
+	//	switch (axis)
+	//	{
+	//	case 0:
+	//		rightNode->bound = AABB{ ivec3{midValue, min.y, min.z}, max };
+	//		break;
+	//	case 1:
+	//		rightNode->bound = AABB{ ivec3{min.x, midValue, min.z}, max };
+	//		break;
+	//	case 2:
+	//		rightNode->bound = AABB{ ivec3{min.x, min.y, midValue}, max };
+	//		break;
+	//	default:
+	//		break;
+	//	}
 
-		rightNode->refPoint = TraceRefPoint(node, axis);
-		node->rightChild = rightNode;
-	}
+	//	rightNode->refPoint = TraceRefPoint(node, axis);
+	//	node->rightChild = rightNode;
+	//}
 }
 
 RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
@@ -327,7 +338,7 @@ std::vector<int> BSPTree::TraceSegment(Polygon* polygon, Segment segment, std::v
 		Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
 		ivec3 dir = ed.getPosition() - st.getPosition();
 
-		int sign = ivec3::dot(dir, polygon->support.getNormal());
+		long long int sign = ivec3::dot(dir, polygon->support.getNormal());
 		if(sign > 0)
 		{
 			// Segment is going out
@@ -436,18 +447,18 @@ Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 	ivec3 n1{ 1, 0, 0 };
 	// should check if they are parallel here
 
-	int d1 = ivec3::dot(n1, p);
+	long long int d1 = ivec3::dot(n1, p);
 
 	// first plane 
-	Plane p1{ n1.x, n1.y, n1.z, d1 };
+	Plane p1( n1.x, n1.y, n1.z, d1 );
 
 	// normal for the second plane that is not parallel to the line
 	ivec3 n2{ 0, 1, 0 };
 
-	int d2 = ivec3::dot(n2, p);
+	long long int d2 = ivec3::dot(n2, p);
 
 	// second plane
-	Plane p2{ n2.x, n2.y, n2.z, d2 };
+	Plane p2( n2.x, n2.y, n2.z, d2 );
 
 
 	//return getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]);
@@ -535,8 +546,8 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, i
 	}
 	else
 	{
-		int c0 = classify(v0, node->plane);
-		int c1 = classify(v1, node->plane);
+		long long int c0 = classify(v0, node->plane);
+		long long int c1 = classify(v1, node->plane);
 
 		if (c0 == c1 && c0 == 0) // Segment lies on the splitting plane
 		{
