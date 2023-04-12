@@ -1,6 +1,14 @@
 global string $gMainWindow;
 setParent $gMainWindow;
-menu -label"Reticuleana" -p $gMainWindow;
+
+string $windowName = "EmberWindowName";
+
+if(`menu -ex $windowName`)
+{
+	deleteUI $windowName;
+}
+
+menu -label"Reticuleana" -p $gMainWindow $windowName;
 menuItem -label "Reticuleana Control Panel" -command ("createWindow");
 
 
