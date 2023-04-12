@@ -20,9 +20,15 @@
 #include <maya/MPlug.h>
 #include <maya/MFnAttribute.h>
 #include <maya/M3dView.h>
-
+#include <maya/MPxContext.h>
+#include <maya/MArgList.h>
+#include <maya/MPxCommand.h>
+#include <maya/MSyntax.h>
+#include <maya/MArgParser.h>
 #include "ember.h"
 #include <vector>
+
+
 
 // custom Maya command
 class helloMaya : public MPxCommand
@@ -31,5 +37,6 @@ public:
 	helloMaya() {};
 	virtual MStatus doIt(const MArgList& args);
 	static void* creator();
+
 };
 #endif

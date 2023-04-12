@@ -1,0 +1,60 @@
+global string $gMainWindow;
+setParent $gMainWindow;
+menu -label"Reticuleana" -p $gMainWindow;
+menuItem -label "Reticuleana Control Panel" -command ("createWindow");
+
+
+global proc runUnion()
+{
+	helloMaya -u 0;
+}
+
+global proc runIntersection()
+{
+	helloMaya -i 0;
+}
+
+global proc runSubtraction()
+{
+	helloMaya -s 0;
+}
+
+global proc liveModeOn()
+{}
+
+global proc liveModeOff()
+{}
+
+global proc createLSystem(string $grammar) 
+{
+	float $step = `floatSliderGrp -q -v stepSlider`;
+	float $angle = `floatSliderGrp -q -v degSlider`;
+	int $iter = `floatSliderGrp -q -v iterSlider`;
+	LSystemCmd -s $step -d $angle -g $grammar -n $iter;
+}
+
+global proc createWindow() 
+{
+	global string $grammar = "";
+
+	string $window = `window -title "Reticuleana Boolean Operator" -widthHeight 200 200 -titleBar true`;
+
+	frameLayout -label "Boolean Operations" -labelAlign "center";
+		columnLayout -columnAlign "center"; 
+			button -label "Union" -width 100 -height 40 -align "center" -command ("runUnion()");
+			button -label "Intersection" -width 100 -height 40 -align "center" -command ("runIntersection()");
+			button -label "Subtraction" -width 100 -height 40 -align "center" -command ("runSubtraction()");
+		setParent ..;
+	setParent ..;
+
+	
+	frameLayout -label "Live Mode" -labelAlign "center";
+		rowLayout -numberOfColumns 2 -columnWidth2 100 100;
+			button -label "On" -width 100 -height 40 -align "left" -command ("liveModeOn()");
+			button -label "Off" -width 100 -height 40 -align "right" -command ("liveModeOff()");
+		setParent ..;
+	setParent ..;
+
+	showWindow;
+};
+

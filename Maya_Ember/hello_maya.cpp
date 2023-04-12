@@ -10,11 +10,26 @@ void* helloMaya::creator()
 {
 	return new helloMaya;
 }
+
 // Plugin doIt function
 MStatus helloMaya::doIt(const MArgList& argList)
 {
 	MStatus status;
-	MGlobal::displayInfo("Reticuleana");
+
+	MSyntax syntax;
+	status = syntax.addFlag("-u", "-union", MSyntax::kString);
+	status = syntax.addFlag("-i", "-intersection", MSyntax::kString);
+	status = syntax.addFlag("-s", "subtraction", MSyntax::kString);
+
+
+	MArgParser argParser(syntax, argList);
+	unsigned int num_of_flag_used = argParser.numberOfFlagsUsed();
+	if (num_of_flag_used > 1)
+	{
+		MGlobal::displayInfo("Error: multiple Boolean operations are selected");
+		return status;
+	}
+
 
 	MSelectionList selectionList;
 	MGlobal::getActiveSelectionList(selectionList);
@@ -87,8 +102,6 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				vert.y = point.y * BIG_NUM;
 				vert.z = point.z * BIG_NUM;
 				polyVerts.push_back(vert);
-				//ember::printNum(k);
-				//ember::printIvec3(vert);
 			}
 			vertices.push_back(polyVerts);
 		}
@@ -117,6 +130,23 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		// The algorithm starts here
 		ember.BuildBSPTree();
 
+		if (argParser.isFlagSet("-u"))
+		{
+			MGlobal::displayInfo("Reticuleana: Union");
+		}
+		else if (argParser.isFlagSet("-i"))
+		{
+			MGlobal::displayInfo("Reticuleana: Intersection");
+		}
+		else if (argParser.isFlagSet("-s"))
+		{
+			MGlobal::displayInfo("Reticuleana: Subtraction");
+		}
+		else
+		{
+			MGlobal::displayInfo("Error: no Boolean operation is selected");
+		}
+
 	return status;
 }
 
@@ -128,6 +158,12 @@ EXPORT MStatus initializePlugin(MObject obj)
 	status = plugin.registerCommand("helloMaya", helloMaya::creator);
 	if (!status)
 		status.perror("registerCommand failed");
+
+	// Auto register Mel menu script
+	char buffer[2048];
+	sprintf_s(buffer, 2048, "source \"%s/EmberUI.mel\";", plugin.loadPath().asChar());
+	MGlobal::executeCommand(buffer, true);
+
 	return status;
 }
 // Cleanup Plugin upon unloading

@@ -285,9 +285,9 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 		long long int c1 = classify(p1, splitPlane);
 		long long int c2 = classify(p2, splitPlane);
 
-		printStr("bound point 1 2:");
-		printPoint(p1);
-		printPoint(p2);
+		//printStr("bound point 1 2:");
+		//printPoint(p1);
+		//printPoint(p2);
 		//printPlane(bound1);
 		//printPlane(bound2);
 

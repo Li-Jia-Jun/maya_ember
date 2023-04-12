@@ -230,8 +230,8 @@ void BSPTree::Split(BSPNode* node)
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
 
-	printStr("split plane:");
-	printPlane(splitPlane);
+	//printStr("split plane:");
+	//printPlane(splitPlane);
 	
 
 	// Divide polygons by split plane
