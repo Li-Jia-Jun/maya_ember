@@ -17,7 +17,7 @@ namespace ember
 {
 	// ======== Configure =============
 	
-#define LEAF_POLYGON_COUNT (8)
+#define LEAF_POLYGON_COUNT (4)
 
 #define AABB_ADJUST (10)
 

@@ -22,13 +22,13 @@ void BSPTree::Build(BSPNode* rootNode)
 	nodes.push_back(rootNode);
 
 	// Create tree nodes recursively (in breadth first order)
-	std::vector<BSPNode*> toTraverse;
-	toTraverse.push_back(rootNode);
+	std::queue<BSPNode*> toTraverse;
+	toTraverse.push(rootNode);
 	int tempCount = 0;
 	while (!toTraverse.empty())
 	{	
-		BSPNode* node = toTraverse.back();
-		toTraverse.pop_back();
+		BSPNode* node = toTraverse.front();
+		toTraverse.pop();
 
 		// Leaf node determination
 		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
@@ -40,25 +40,56 @@ void BSPTree::Build(BSPNode* rootNode)
 		// Collect new nodes
 		if (node->leftChild != nullptr)
 		{
-			toTraverse.push_back(node->leftChild);
+			toTraverse.push(node->leftChild);
 			nodes.push_back(node->leftChild);
 		}
 		if (node->rightChild != nullptr)
 		{
-			toTraverse.push_back(node->rightChild);
+			toTraverse.push(node->rightChild);
 			nodes.push_back(node->rightChild);
 		}
 
-		if (tempCount++ >= 20)
+		if (++tempCount >= 1)
 		{
 			break;
 		}
 	}
 
-	// Draw all the sub bounding boxes by iterating all the nodes and draw their AABB
-	//for (int i = 0; i < nodes.size(); ++i)
+	// Draw leaf nodes
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
+		drawBoundingBox(nodes[i]->bound);
+		for (int j = 0; j < nodes[i]->polygons.size(); j++)
+		{
+			drawPolygon(nodes[i]->polygons[j]);
+		}
+	}
+
+	//Plane splitPlane = Plane(1, 0, 0, 0);
+	//BSPNode* leftChild = nodes[0]->rightChild;
+	//drawBoundingBox(leftChild->bound);
+	//for (int j = 0; j < leftChild->polygons.size(); j++)
 	//{
-	//	drawBoundingBox(nodes[i]->bound);
+	//	Polygon* polygon = leftChild->polygons[j];
+
+	//	int boundSize = polygon->bounds.size();
+	//	for (int k = 0; k < boundSize; ++k)
+	//	{
+	//		Plane edge = polygon->bounds[k];
+	//		Plane bound1 = polygon->bounds[(k - 1 + boundSize) % boundSize];
+	//		Plane bound2 = polygon->bounds[(k + 1) % boundSize];
+	//		Point p1 = intersect(polygon->support, edge, bound1);
+	//		Point p2 = intersect(polygon->support, edge, bound2);
+	//		int c1 = classify(p1, splitPlane);
+	//		int c2 = classify(p2, splitPlane);
+	//		printStr("test p1 p2 c1 c2:");
+	//		printPoint(p1);
+	//		printPoint(p2);
+	//		printNum(c1);
+	//		printNum(c2);
+	//	}
+	//	drawPolygon(leftChild->polygons[j]);
 	//}
 
 	// Handle leaf node
@@ -69,7 +100,6 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	{
 	//		continue;
 	//	}
-
 	//	BuildLocalBSP(leaf);
 	//	FaceClassification(leaf);
 	//}
@@ -211,13 +241,13 @@ void BSPTree::Split(BSPNode* node)
 	long long int boundX = max.x - min.x;
 	long long int boundY = max.y - min.y;
 	long long int boundZ = max.z - min.z;
-	if (boundX > boundY && boundX > boundZ)
+	if (boundX >= boundY && boundX >= boundZ)
 	{
 		axis = 0;
 		midValue = long long int((min.x + max.x) * 0.5f);
 		splitPlane = Plane::fromPositionNormal(ivec3{ midValue, min.y, min.z }, ivec3{ 1, 0, 0 });
 	}
-	else if (boundY > boundX && boundY > boundZ)
+	else if (boundY >= boundX && boundY >= boundZ)
 	{
 		axis = 1;
 		midValue = long long int((min.y + max.y) * 0.5f);
@@ -230,9 +260,8 @@ void BSPTree::Split(BSPNode* node)
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
 
-	//printStr("split plane:");
+	//printStr("split plane = ");
 	//printPlane(splitPlane);
-	
 
 	// Divide polygons by split plane
 	std::vector<Polygon*> leftPolygons;
@@ -240,21 +269,31 @@ void BSPTree::Split(BSPNode* node)
 	for (int i = 0; i < node->polygons.size(); i++)
 	{	
 		auto pairs = splitPolygon(node->polygons[i], splitPlane);
+
 		if (pairs.first != nullptr)
 		{
+			//printStr("new left polygon, bound count = ");
+			//printNum(pairs.first->bounds.size());
 			leftPolygons.push_back(pairs.first);
 		}
 		if (pairs.second != nullptr)
 		{
+			//printStr("new right polygon, bound count =  ");
+			//printNum(pairs.second->bounds.size());
 			rightPolygons.push_back(pairs.second);
 		}
 	}
+
+	//printStr("=============== to create new nodes ==================");
 
 	// Left Node
 	// - Max bound changes to middle point
 	// - RefPoint remains the same
 	if (leftPolygons.size() > 0)
 	{
+		//printStr("create new left node, polygon count = " );
+		//printNum(leftPolygons.size());
+
 		BSPNode* leftNode = new BSPNode();
 		leftNode->polygons = leftPolygons;
 		switch (axis)
@@ -278,29 +317,32 @@ void BSPTree::Split(BSPNode* node)
 	// Right Node
 	// - Min bound changes to middle points
 	// - Trace new RefPoint
-	//if (rightPolygons.size() > 0)
-	//{
-	//	BSPNode* rightNode = new BSPNode();
-	//	rightNode->polygons = rightPolygons;
+	if (rightPolygons.size() > 0)
+	{
+		//printStr("create new right node, polygon count = ");
+		//printNum(rightPolygons.size());
 
-	//	switch (axis)
-	//	{
-	//	case 0:
-	//		rightNode->bound = AABB{ ivec3{midValue, min.y, min.z}, max };
-	//		break;
-	//	case 1:
-	//		rightNode->bound = AABB{ ivec3{min.x, midValue, min.z}, max };
-	//		break;
-	//	case 2:
-	//		rightNode->bound = AABB{ ivec3{min.x, min.y, midValue}, max };
-	//		break;
-	//	default:
-	//		break;
-	//	}
+		BSPNode* rightNode = new BSPNode();
+		rightNode->polygons = rightPolygons;
 
-	//	rightNode->refPoint = TraceRefPoint(node, axis);
-	//	node->rightChild = rightNode;
-	//}
+		switch (axis)
+		{
+		case 0:
+			rightNode->bound = AABB{ ivec3{midValue, min.y, min.z}, max };
+			break;
+		case 1:
+			rightNode->bound = AABB{ ivec3{min.x, midValue, min.z}, max };
+			break;
+		case 2:
+			rightNode->bound = AABB{ ivec3{min.x, min.y, midValue}, max };
+			break;
+		default:
+			break;
+		}
+
+		//rightNode->refPoint = TraceRefPoint(node, axis);
+		node->rightChild = rightNode;
+	}
 }
 
 RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)

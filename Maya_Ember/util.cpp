@@ -11,7 +11,7 @@ using namespace ember;
 long long int ember::multiply(Point x, Plane s)
 {
 	// Not sure if this works
-	return x.x1 * s.a + x.x2 * s.b + x.x3 * s.c + x.x4 * s.d;
+	return -(x.x1 * s.a + x.x2 * s.b + x.x3 * s.c + x.x4 * s.d);
 }
 
 int ember::sign(long long int value)
@@ -272,6 +272,8 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	std::vector<Plane> rightEdgePlanes;
 	bool hasSplit = false;
 
+	//printStr("=============== to split polygon ==============");
+
 	// Divide edge by split plane
 	int boundSize = polygon->bounds.size();
 	for (int j = 0; j < boundSize; j++)
@@ -285,13 +287,23 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 		long long int c1 = classify(p1, splitPlane);
 		long long int c2 = classify(p2, splitPlane);
 
+		////printStr("split edge c1 c2 = ");
+		////printNum(c1);
+		////printNum(c2);
+
 		//printStr("bound point 1 2:");
 		//printPoint(p1);
 		//printPoint(p2);
-		//printPlane(bound1);
-		//printPlane(bound2);
+		////printPlane(bound1);
+		////printPlane(bound2);
 
-		if (c1 <= 0 && c2 <= 0)
+		if (c1 == 0 && c2 == 0)
+		{
+			// Edge lies on split plane
+			leftEdgePlanes.push_back(edgePlane);
+			rightEdgePlanes.push_back(edgePlane);
+		}
+		else if (c1 <= 0 && c2 <= 0)
 		{
 			// Edge to left (no positive values, including all zero)
 			leftEdgePlanes.push_back(edgePlane);
@@ -303,35 +315,46 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 		}
 		else
 		{
-			// Split and add edge to both sides
-			leftEdgePlanes.push_back(edgePlane);
-
 			if (!hasSplit)
 			{
-				leftEdgePlanes.push_back(splitPlane);
-
-				// Since split plane orients to right side, we need to flip it
-				// to make sure all bound planes orient outside
-				Plane flippedSplitPlane = Plane{-splitPlane.a, -splitPlane.b, -splitPlane.c, -splitPlane.d};
-				rightEdgePlanes.push_back(flippedSplitPlane);
 				hasSplit = true;
-			}
 
-			rightEdgePlanes.push_back(edgePlane);
+				if (c1 <= 0 && c2 >= 0)
+				{
+					leftEdgePlanes.push_back(edgePlane);
+					leftEdgePlanes.push_back(splitPlane);
+
+					rightEdgePlanes.push_back(splitPlane.flip());
+					rightEdgePlanes.push_back(edgePlane);
+				}
+				else
+				{
+					leftEdgePlanes.push_back(splitPlane);
+					leftEdgePlanes.push_back(edgePlane);
+
+					rightEdgePlanes.push_back(edgePlane);
+					rightEdgePlanes.push_back(splitPlane.flip());
+				}
+			}
+			else
+			{
+				leftEdgePlanes.push_back(edgePlane);
+				rightEdgePlanes.push_back(edgePlane);
+			}
 		}
 	}
 
 	// Collect divided edges to build polygons
 	Polygon* leftPolygon = nullptr;
 	Polygon* rightPolygon = nullptr;
-	if (!leftEdgePlanes.empty())
+	if (leftEdgePlanes.size() >= 2)
 	{
 		leftPolygon = new Polygon();
 		leftPolygon->meshId = polygon->meshId;
 		leftPolygon->bounds = leftEdgePlanes;
 		leftPolygon->support = polygon->support;
 	}
-	if (!rightEdgePlanes.empty())
+	if (rightEdgePlanes.size() >= 2)
 	{
 		rightPolygon = new Polygon();
 		rightPolygon->meshId = polygon->meshId;
@@ -433,7 +456,7 @@ Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int 
 
 		// If the vertex order follows the right hand rule
 		// the calculated bound plane normal will orient outside
-		ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);
+		ivec3 nor = ivec3::cross(normal, edgeDir);
 		bounds.push_back(Plane::fromPositionNormal(p1, nor));
 	}
 

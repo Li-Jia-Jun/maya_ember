@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <queue>
 namespace ember
 {
 	struct ivec3
@@ -60,17 +61,17 @@ namespace ember
 
 		Point(long long int xx1, long long int xx2, long long int xx3, long long int xx4)
 		{
-			//while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
-			//{
-			//	xx1 = xx1 / 10;
-			//	xx2 = xx2 / 10;
-			//	xx3 = xx3 / 10;
-			//	xx4 = xx4 / 10;
-			//}
-			//x1 = xx1;
-			//x2 = xx2;
-			//x3 = xx3;
-			//x4 = xx4;
+			while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
+			{
+				xx1 = xx1 / 10;
+				xx2 = xx2 / 10;
+				xx3 = xx3 / 10;
+				xx4 = xx4 / 10;
+			}
+			x1 = xx1;
+			x2 = xx2;
+			x3 = xx3;
+			x4 = xx4;
 		}
 
 		bool isValid()
@@ -96,17 +97,17 @@ namespace ember
 
 		Plane(long long int aa, long long int bb, long long int cc, long long int dd)
 		{
-			//while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
-			//{
-			//	aa = aa / 10;
-			//	bb = bb / 10;
-			//	cc = cc / 10;
-			//	dd = dd / 10;
-			//}
-			//a = aa;
-			//b = bb;
-			//c = cc; 
-			//d = dd;
+			while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
+			{
+				aa = aa / 10;
+				bb = bb / 10;
+				cc = cc / 10;
+				dd = dd / 10;
+			}
+			a = aa;
+			b = bb;
+			c = cc; 
+			d = dd;
 		}
 
 		Plane()
@@ -118,6 +119,11 @@ namespace ember
 		ivec3 getNormal()
 		{
 			return { a, b, c };
+		}
+
+		Plane flip()
+		{
+			return Plane(-a, -b, -c, -d);
 		}
 
 		static Plane fromPositionNormal(ivec3 p, ivec3 nor)

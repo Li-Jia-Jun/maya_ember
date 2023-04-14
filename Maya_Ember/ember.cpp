@@ -13,11 +13,6 @@ void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<
 		polygons.push_back(ember::fromPositionNormal(vertices[i], normals[i], meshId));
 	}
 	meshId++;
-
-	//for (int i = 0; i < polygons.size(); i++)
-	//{
-	//	drawPolygon(polygons[i]);
-	//}
 }
 
 void EMBER::SetInitBound(AABB bound)

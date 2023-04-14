@@ -119,13 +119,6 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		bound.min.y = minY * BIG_NUM - offset;
 		bound.min.z = minZ * BIG_NUM - offset;
 		ember.SetInitBound(bound);
-		// LEO::TODO::currently this only works for the original mesh. If it has transformation it will break
-		drawBoundingBox(bound);
-		
-		//drawBoundingBox(bound);
-		//bound.max = bound.max + ember::ivec3{ 5000, 5000, 5000 };
-		//drawBoundingBox(bound);
-		
 
 		// The algorithm starts here
 		ember.BuildBSPTree();
