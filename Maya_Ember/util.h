@@ -28,14 +28,14 @@ namespace ember
 
 	// ======== Basic Math =============
 
-	long long int multiply(Point x, Plane s);
+	BigInt multiply(Point x, Plane s);
 
-	int sign(long long int value);
+	int sign(BigInt value);
 
-	long long int determiant3x3(
-		long long int a, long long int b, long long int c,
-		long long int d, long long int e, long long int f,
-		long long int g, long long int h, long long int i);
+	BigInt determiant3x3(
+		BigInt a, BigInt b, BigInt c,
+		BigInt d, BigInt e, BigInt f,
+		BigInt g, BigInt h, BigInt i);
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
@@ -96,12 +96,12 @@ namespace ember
 
 	Point intersect(Plane p, Plane q, Plane r);
 
-	long long int classify(Point x, Plane s);
+	int classify(Point x, Plane s);
 
 	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
 
 	void printStr(const char*);
-	void printNum(long long int);
+	void printNum(BigInt);
 	void printIvec3(ivec3);
 	void printPoint(Point);
 	void printPlane(Plane);

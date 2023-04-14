@@ -234,29 +234,29 @@ void BSPTree::Split(BSPNode* node)
 	// Split by the midpoint of the longest length
 	// The split plane always orient along positive axis
 	int axis;
-	long long int midValue;
+	BigInt midValue;
 	Plane splitPlane;
 	ivec3 min = node->bound.min;
 	ivec3 max = node->bound.max;
-	long long int boundX = max.x - min.x;
-	long long int boundY = max.y - min.y;
-	long long int boundZ = max.z - min.z;
+	BigInt boundX = max.x - min.x;
+	BigInt boundY = max.y - min.y;
+	BigInt boundZ = max.z - min.z;
 	if (boundX >= boundY && boundX >= boundZ)
 	{
 		axis = 0;
-		midValue = long long int((min.x + max.x) * 0.5f);
+		midValue = BigInt((min.x + max.x) / 2);
 		splitPlane = Plane::fromPositionNormal(ivec3{ midValue, min.y, min.z }, ivec3{ 1, 0, 0 });
 	}
 	else if (boundY >= boundX && boundY >= boundZ)
 	{
 		axis = 1;
-		midValue = long long int((min.y + max.y) * 0.5f);
+		midValue = BigInt((min.y + max.y) / 2);
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, midValue, min.z }, ivec3{ 0, 1, 0 });
 	}
 	else
 	{
 		axis = 2;
-		midValue = long long int((min.z + max.z) * 0.5f);
+		midValue = BigInt((min.z + max.z) / 2);
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
 
@@ -380,7 +380,7 @@ std::vector<int> BSPTree::TraceSegment(Polygon* polygon, Segment segment, std::v
 		Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
 		ivec3 dir = ed.getPosition() - st.getPosition();
 
-		long long int sign = ivec3::dot(dir, polygon->support.getNormal());
+		BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
 		if(sign > 0)
 		{
 			// Segment is going out
@@ -489,7 +489,7 @@ Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 	ivec3 n1{ 1, 0, 0 };
 	// should check if they are parallel here
 
-	long long int d1 = ivec3::dot(n1, p);
+	BigInt d1 = ivec3::dot(n1, p);
 
 	// first plane 
 	Plane p1( n1.x, n1.y, n1.z, d1 );
@@ -497,7 +497,7 @@ Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 	// normal for the second plane that is not parallel to the line
 	ivec3 n2{ 0, 1, 0 };
 
-	long long int d2 = ivec3::dot(n2, p);
+	BigInt d2 = ivec3::dot(n2, p);
 
 	// second plane
 	Plane p2( n2.x, n2.y, n2.z, d2 );
