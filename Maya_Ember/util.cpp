@@ -475,28 +475,31 @@ void ember::printStr(const char* str)
 void ember::printNum(BigInt n)
 {
 	char buffer[1024];
-	sprintf_s(buffer, "num: %s", n.to_string());
+	sprintf_s(buffer, "num: %s", n.to_string().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printIvec3(ember::ivec3 v)
 {
 	char buffer[1024];
-	sprintf_s(buffer, "ivec3: %s %s %s", v.x.to_string(), v.y.to_string(), v.z.to_string());
+	sprintf_s(buffer, "ivec3: %s %s %s", 
+		v.x.to_string().c_str(), v.y.to_string().c_str(), v.z.to_string().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPoint(ember::Point p)
 {
 	char buffer[1024];
-	sprintf_s(buffer, "x1: %s x2: %s x3: %s x4: %s", p.x1.to_string(), p.x2.to_string(), p.x3.to_string(), p.x4.to_string());
+	sprintf_s(buffer, "x1: %s x2: %s x3: %s x4: %s", 
+		p.x1.to_string().c_str(), p.x2.to_string().c_str(), p.x3.to_string().c_str(), p.x4.to_string().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPlane(ember::Plane p)
 {
 	char buffer[1024];
-	sprintf_s(buffer, "a: %s b: %s c: %s d: %s", p.a.to_string(), p.b.to_string(), p.c.to_string(), p.d.to_string());
+	sprintf_s(buffer, "a: %s b: %s c: %s d: %s", 
+		p.a.to_string().c_str(), p.b.to_string().c_str(), p.c.to_string().c_str(), p.d.to_string().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
