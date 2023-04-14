@@ -144,6 +144,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BigFloat.h" />
+    <ClInclude Include="BigInt.hpp" />
     <ClInclude Include="bsp.h" />
     <ClInclude Include="ember.h" />
     <ClInclude Include="geometry.h" />
@@ -152,6 +154,8 @@
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BigFloat.cc" />
+    <ClCompile Include="BigInt.cpp" />
     <ClCompile Include="bsp.cpp" />
     <ClCompile Include="ember.cpp" />
     <ClCompile Include="hello_maya.cpp" />

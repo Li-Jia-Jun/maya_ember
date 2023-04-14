@@ -33,6 +33,12 @@
     <ClInclude Include="maya_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BigFloat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BigInt.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hello_maya.cpp">
@@ -45,6 +51,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BigInt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BigFloat.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

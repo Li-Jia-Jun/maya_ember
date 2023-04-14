@@ -5,6 +5,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
+#include "BigFloat.h"
+
 using namespace ember;
 
 
@@ -465,42 +467,42 @@ Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int 
 
 void ember::printStr(const char* str)
 {
-	char buffer[128];
+	char buffer[1024];
 	sprintf_s(buffer, str);
 	MGlobal::displayInfo(buffer);
 }
 
 void ember::printNum(BigInt n)
 {
-	char buffer[32];
-	//sprintf_s(buffer, "num: %s", n.to_string());
-	//MGlobal::displayInfo(buffer);
+	char buffer[1024];
+	sprintf_s(buffer, "num: %s", n.to_string());
+	MGlobal::displayInfo(buffer);
 }
 
 void ember::printIvec3(ember::ivec3 v)
 {
-	char buffer[128];
-	//sprintf_s(buffer, "ivec3: %s %s %s", v.x.to_string(), v.y.to_string(), v.z.to_string());
-	//MGlobal::displayInfo(buffer);
+	char buffer[1024];
+	sprintf_s(buffer, "ivec3: %s %s %s", v.x.to_string(), v.y.to_string(), v.z.to_string());
+	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPoint(ember::Point p)
 {
-	char buffer[128];
-	//sprintf_s(buffer, "x1: %s x2: %s x3: %s x4: %s", p.x1.to_string(), p.x2.to_string(), p.x3.to_string(), p.x4.to_string());
-	//MGlobal::displayInfo(buffer);
+	char buffer[1024];
+	sprintf_s(buffer, "x1: %s x2: %s x3: %s x4: %s", p.x1.to_string(), p.x2.to_string(), p.x3.to_string(), p.x4.to_string());
+	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPlane(ember::Plane p)
 {
-	char buffer[128];
-	//sprintf_s(buffer, "a: %s b: %s c: %s d: %s", p.a.to_string(), p.b.to_string(), p.c.to_string(), p.d.to_string());
-	//MGlobal::displayInfo(buffer);
+	char buffer[1024];
+	sprintf_s(buffer, "a: %s b: %s c: %s d: %s", p.a.to_string(), p.b.to_string(), p.c.to_string(), p.d.to_string());
+	MGlobal::displayInfo(buffer);
 }
 
 void ember::printPolygon(ember::Polygon p)
 {
-	char buffer[128];
+	char buffer[1024];
 	sprintf_s(buffer, "support plane: ");
 	MGlobal::displayInfo(buffer);
 	ember::printPlane(p.support);
@@ -516,18 +518,15 @@ void ember::printPolygon(ember::Polygon p)
 void ember::drawPolygon(Polygon* p)
 {
 	int numVerts = p->bounds.size();
-	//printNum(numVerts);
 
 	MPointArray vertices;
 	MIntArray vertCount;
 	MIntArray vertList;
 	vertCount.append(numVerts);
-	//printNum(vertCount[0]);
 
 	for (int i = 0; i < numVerts; i++)
 	{
 		Point vert = getPolygonPoint(p, i);
-		//printPoint(vert);
 
 		if (vert.x4 == 0)
 		{
@@ -536,10 +535,14 @@ void ember::drawPolygon(Polygon* p)
 		}
 
 		ivec3 vertPos = vert.getPosition();
-		//printIvec3(vertPos);
-		vertices.append(MPoint((float)(vertPos.x / BIG_NUM).to_long_long(), (float)(vertPos.y / BIG_NUM).to_long_long(), (float)(vertPos.z / BIG_NUM).to_long_long()));
+		BigFloat x(vertPos.x.to_string());
+		BigFloat y(vertPos.y.to_string());
+		BigFloat z(vertPos.z.to_string());
+		vertices.append(MPoint(
+			BigFloat::PrecDiv(x, BIG_NUM, 5).ToDouble(), 
+			BigFloat::PrecDiv(y, BIG_NUM, 5).ToDouble(), 
+			BigFloat::PrecDiv(z, BIG_NUM, 5).ToDouble()));
 		vertList.append(i);
-		//printNum(i);
 	}
 
 	MFnTransform transformFn;
@@ -566,12 +569,18 @@ void ember::drawBoundingBox(AABB boundingBox)
 {
 	static int count = 0;
 
-	float maxX = (float)(boundingBox.max.x / BIG_NUM).to_long_long();
-	float maxY = (float)(boundingBox.max.y / BIG_NUM).to_long_long();
-	float maxZ = (float)(boundingBox.max.z / BIG_NUM).to_long_long();
-	float minX = (float)(boundingBox.min.x / BIG_NUM).to_long_long();
-	float minY = (float)(boundingBox.min.y / BIG_NUM).to_long_long();
-	float minZ = (float)(boundingBox.min.z / BIG_NUM).to_long_long();
+	BigFloat fmaxX(boundingBox.max.x.to_string());
+	BigFloat fmaxY(boundingBox.max.y.to_string());
+	BigFloat fmaxZ(boundingBox.max.z.to_string());
+	BigFloat fminX(boundingBox.min.x.to_string());
+	BigFloat fminY(boundingBox.min.y.to_string());
+	BigFloat fminZ(boundingBox.min.z.to_string());
+	double maxX = BigFloat::PrecDiv(fmaxX, BIG_NUM, 5).ToDouble();
+	double maxY = BigFloat::PrecDiv(fmaxY, BIG_NUM, 5).ToDouble(); 
+	double maxZ = BigFloat::PrecDiv(fmaxZ, BIG_NUM, 5).ToDouble();
+	double minX = BigFloat::PrecDiv(fminX, BIG_NUM, 5).ToDouble();
+	double minY = BigFloat::PrecDiv(fminY, BIG_NUM, 5).ToDouble();
+	double minZ = BigFloat::PrecDiv(fminZ, BIG_NUM, 5).ToDouble();
 
 	MPointArray vertices;
 	vertices.append(MPoint(minX, maxY, maxZ));
