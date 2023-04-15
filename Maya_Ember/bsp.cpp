@@ -22,38 +22,38 @@ void BSPTree::Build(BSPNode* rootNode)
 	nodes.push_back(rootNode);
 
 	// Create tree nodes recursively (in breadth first order)
-	std::queue<BSPNode*> toTraverse;
-	toTraverse.push(rootNode);
-	int tempCount = 0;
-	while (!toTraverse.empty())
-	{	
-		BSPNode* node = toTraverse.front();
-		toTraverse.pop();
+	//std::queue<BSPNode*> toTraverse;
+	//toTraverse.push(rootNode);
+	//int tempCount = 0;
+	//while (!toTraverse.empty())
+	//{	
+	//	BSPNode* node = toTraverse.front();
+	//	toTraverse.pop();
 
-		// Leaf node determination
-		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
-			continue;
+	//	// Leaf node determination
+	//	if (node->polygons.size() <= LEAF_POLYGON_COUNT)
+	//		continue;
 
-		// Split AABB
-		Split(node);
+	//	// Split AABB
+	//	Split(node);
 
-		// Collect new nodes
-		if (node->leftChild != nullptr)
-		{
-			toTraverse.push(node->leftChild);
-			nodes.push_back(node->leftChild);
-		}
-		if (node->rightChild != nullptr)
-		{
-			toTraverse.push(node->rightChild);
-			nodes.push_back(node->rightChild);
-		}
+	//	// Collect new nodes
+	//	if (node->leftChild != nullptr)
+	//	{
+	//		toTraverse.push(node->leftChild);
+	//		nodes.push_back(node->leftChild);
+	//	}
+	//	if (node->rightChild != nullptr)
+	//	{
+	//		toTraverse.push(node->rightChild);
+	//		nodes.push_back(node->rightChild);
+	//	}
 
-		if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
-		{
-			break;
-		}
-	}
+	//	if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
+	//	{
+	//		break;
+	//	}
+	//}
 
 	// Draw leaf nodes
 	for (int i = 0; i < nodes.size(); i++)
@@ -66,43 +66,17 @@ void BSPTree::Build(BSPNode* rootNode)
 		}
 	}
 
-	// Draw a polygon count
-	//Plane splitPlane = Plane(1, 0, 0, 0);
-	//BSPNode* node = nodes[0];
-	////drawBoundingBox(node->bound);
-	//for (int j = 0; j < 1; j++)
-	//{
-	//	Polygon* polygon = node->polygons[j];
-	//	int boundSize = polygon->bounds.size();
-	//	for (int k = 0; k < boundSize; ++k)
-	//	{
-	//		Plane edge = polygon->bounds[k];
-	//		Plane bound1 = polygon->bounds[(k - 1 + boundSize) % boundSize];
-	//		Plane bound2 = polygon->bounds[(k + 1) % boundSize];
-	//		Point p1 = intersect(polygon->support, edge, bound1);
-	//		Point p2 = intersect(polygon->support, edge, bound2);
-	//		int c1 = classify(p1, splitPlane);
-	//		int c2 = classify(p2, splitPlane);
-	//		printStr("test p1 p2 c1 c2:");
-	//		printPoint(p1);
-	//		printPoint(p2);
-	//		printNum(c1);
-	//		printNum(c2);
-	//	}
-	//	//drawPolygon(node->polygons[j]);
-	//}
-
 	// Handle leaf node
-	//for (int i = 0; i < nodes.size(); i++)
-	//{
-	//	BSPNode* leaf = nodes[i];
-	//	if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
-	//	{
-	//		continue;
-	//	}
-	//	BuildLocalBSP(leaf);
-	//	FaceClassification(leaf);
-	//}
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		BSPNode* leaf = nodes[i];
+		if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
+		{
+			continue;
+		}
+		BuildLocalBSP(leaf);
+		FaceClassification(leaf);
+	}
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
