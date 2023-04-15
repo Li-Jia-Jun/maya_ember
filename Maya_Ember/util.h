@@ -19,9 +19,11 @@ namespace ember
 	
 #define LEAF_POLYGON_COUNT (4)
 
+#define GLOBAL_BSP_NODE_COUNT (3)
+
 #define AABB_ADJUST (10)
 
-#define BIG_NUM 1000
+#define BIG_NUM 1000000
 
 	// ==================================
 

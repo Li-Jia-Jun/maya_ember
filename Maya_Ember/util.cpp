@@ -272,9 +272,11 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 {
 	std::vector<Plane> leftEdgePlanes;
 	std::vector<Plane> rightEdgePlanes;
+	std::vector<int> leftZeroPointEdgeIndex;
+	std::vector<int> rightZeroPointEdgeIndex;
+	int zeroPointCount = 0;
+	int edgeOnSplitCount = 0;
 	bool hasSplit = false;
-
-	//printStr("=============== to split polygon ==============");
 
 	// Divide edge by split plane
 	int boundSize = polygon->bounds.size();
@@ -289,30 +291,35 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 		int c1 = classify(p1, splitPlane);
 		int c2 = classify(p2, splitPlane);
 
-		////printStr("split edge c1 c2 = ");
-		////printNum(c1);
-		////printNum(c2);
+		// Keep track of zero points on the split plane
+		if (c1 == 0)
+		{
+			leftZeroPointEdgeIndex.push_back(leftEdgePlanes.size());
+			rightZeroPointEdgeIndex.push_back(rightEdgePlanes.size());
+			zeroPointCount++;
+		}
+		if (c2 == 0)
+		{
+			leftZeroPointEdgeIndex.push_back(leftEdgePlanes.size());
+			rightZeroPointEdgeIndex.push_back(rightEdgePlanes.size());
+			zeroPointCount++;
+		}
 
-		//printStr("bound point 1 2:");
-		//printPoint(p1);
-		//printPoint(p2);
-		////printPlane(bound1);
-		////printPlane(bound2);
-
+		// Edge lies on split plane
 		if (c1 == 0 && c2 == 0)
 		{
-			// Edge lies on split plane
 			leftEdgePlanes.push_back(edgePlane);
 			rightEdgePlanes.push_back(edgePlane);
+			edgeOnSplitCount++;
 		}
+		// Edge to left (no positive values)
 		else if (c1 <= 0 && c2 <= 0)
-		{
-			// Edge to left (no positive values, including all zero)
+		{	
 			leftEdgePlanes.push_back(edgePlane);
 		}
+		// Edge to right (all positive values)
 		else if (c1 >= 0 && c2 >= 0)
 		{
-			// Edge to right (all positive values)
 			rightEdgePlanes.push_back(edgePlane);
 		}
 		else
@@ -344,6 +351,18 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 				rightEdgePlanes.push_back(edgePlane);
 			}
 		}
+	}
+
+	// If we have 2 distinct points
+	if (zeroPointCount - edgeOnSplitCount * 2 >= 4)
+	{
+		int leftInsert = leftZeroPointEdgeIndex[0] <= leftZeroPointEdgeIndex[1] ? 
+			leftZeroPointEdgeIndex[0] : leftZeroPointEdgeIndex[1];
+		int rightInsert = rightZeroPointEdgeIndex[0] >= rightZeroPointEdgeIndex[1] ?
+			rightZeroPointEdgeIndex[0] : rightZeroPointEdgeIndex[1];
+
+		leftEdgePlanes.insert(leftEdgePlanes.begin() + leftInsert, splitPlane);
+		rightEdgePlanes.insert(rightEdgePlanes.begin() + rightInsert, splitPlane.flip());
 	}
 
 	// Collect divided edges to build polygons

@@ -63,13 +63,13 @@ namespace ember
 
 		Point(BigInt xx1, BigInt xx2, BigInt xx3, BigInt xx4)
 		{
-			while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
-			{
-				xx1 = xx1 / 10;
-				xx2 = xx2 / 10;
-				xx3 = xx3 / 10;
-				xx4 = xx4 / 10;
-			}
+			//while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
+			//{
+			//	xx1 = xx1 / 10;
+			//	xx2 = xx2 / 10;
+			//	xx3 = xx3 / 10;
+			//	xx4 = xx4 / 10;
+			//}
 			x1 = xx1;
 			x2 = xx2;
 			x3 = xx3;
@@ -99,13 +99,13 @@ namespace ember
 
 		Plane(BigInt aa, BigInt bb, BigInt cc, BigInt dd)
 		{
-			while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
-			{
-				aa = aa / 10;
-				bb = bb / 10;
-				cc = cc / 10;
-				dd = dd / 10;
-			}
+			//while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
+			//{
+			//	aa = aa / 10;
+			//	bb = bb / 10;
+			//	cc = cc / 10;
+			//	dd = dd / 10;
+			//}
 			a = aa;
 			b = bb;
 			c = cc; 

@@ -49,7 +49,7 @@ void BSPTree::Build(BSPNode* rootNode)
 			nodes.push_back(node->rightChild);
 		}
 
-		if (++tempCount >= 1)
+		if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
 		{
 			break;
 		}
@@ -66,13 +66,13 @@ void BSPTree::Build(BSPNode* rootNode)
 		}
 	}
 
+	// Draw a polygon count
 	//Plane splitPlane = Plane(1, 0, 0, 0);
-	//BSPNode* leftChild = nodes[0]->rightChild;
-	//drawBoundingBox(leftChild->bound);
-	//for (int j = 0; j < leftChild->polygons.size(); j++)
+	//BSPNode* node = nodes[0];
+	////drawBoundingBox(node->bound);
+	//for (int j = 0; j < 1; j++)
 	//{
-	//	Polygon* polygon = leftChild->polygons[j];
-
+	//	Polygon* polygon = node->polygons[j];
 	//	int boundSize = polygon->bounds.size();
 	//	for (int k = 0; k < boundSize; ++k)
 	//	{
@@ -89,7 +89,7 @@ void BSPTree::Build(BSPNode* rootNode)
 	//		printNum(c1);
 	//		printNum(c2);
 	//	}
-	//	drawPolygon(leftChild->polygons[j]);
+	//	//drawPolygon(node->polygons[j]);
 	//}
 
 	// Handle leaf node
@@ -260,8 +260,8 @@ void BSPTree::Split(BSPNode* node)
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
 
-	//printStr("split plane = ");
-	//printPlane(splitPlane);
+	printStr("split plane = ");
+	printPlane(splitPlane);
 
 	// Divide polygons by split plane
 	std::vector<Polygon*> leftPolygons;
