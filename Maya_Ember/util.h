@@ -17,11 +17,13 @@ namespace ember
 {
 	// ======== Configure =============
 	
-#define LEAF_POLYGON_COUNT (4)
+#define LEAF_POLYGON_COUNT (6)
 
-#define GLOBAL_BSP_NODE_COUNT (3)
+#define GLOBAL_BSP_NODE_COUNT (7)
 
-#define BIG_NUM 1000000
+#define AABB_ADJUST ivec3{BigInt(1000), BigInt(1000), BigInt(1000)}
+
+#define BIG_NUM 100000
 
 	// ==================================
 

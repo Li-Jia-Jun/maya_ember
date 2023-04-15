@@ -12,14 +12,16 @@ using namespace ember;
 
 BigInt ember::multiply(Point x, Plane s)
 {
-	// Not sure if this works
-	return -(x.x1 * s.a + x.x2 * s.b + x.x3 * s.c + x.x4 * s.d);
+	// Flip the s.d here because the representation in paper is different from Cramer's rule
+	// In Cramer's rule, we have ax + by + cz = d
+	// In paper, we have ax + by + cz + d = 0
+	return (x.x1 * s.a + x.x2 * s.b + x.x3 * s.c + x.x4 * (-s.d));
 }
 
 int ember::sign(BigInt value)
 {
-	if (value > 0) return 1;
-	else if (value < 0) return -1;
+	if (value > BigInt(0)) return 1;
+	else if (value < BigInt(0)) return -1;
 	else return 0;
 }
 

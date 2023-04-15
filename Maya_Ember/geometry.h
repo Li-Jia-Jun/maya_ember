@@ -63,13 +63,13 @@ namespace ember
 
 		Point(BigInt xx1, BigInt xx2, BigInt xx3, BigInt xx4)
 		{
-			//while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
-			//{
-			//	xx1 = xx1 / 10;
-			//	xx2 = xx2 / 10;
-			//	xx3 = xx3 / 10;
-			//	xx4 = xx4 / 10;
-			//}
+			while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
+			{
+				xx1 = xx1 / 10;
+				xx2 = xx2 / 10;
+				xx3 = xx3 / 10;
+				xx4 = xx4 / 10;
+			}
 			x1 = xx1;
 			x2 = xx2;
 			x3 = xx3;
@@ -85,7 +85,7 @@ namespace ember
 		{
 			// Cramer's rule
 
-			return ivec3{ BigInt(-x1 / x4), BigInt(-x2 / x4), BigInt(-x3 / x4) };
+			return ivec3{ BigInt(x1 / x4), BigInt(x2 / x4), BigInt(x3 / x4) };
 		}
 	};
 	struct AABB
@@ -94,18 +94,18 @@ namespace ember
 	};
 	struct Plane
 	{
-		// ax + by + cz + d = 0
+		// ax + by + cz = d (This is the representation in Cramer's rule
 		BigInt a, b, c, d;
 
 		Plane(BigInt aa, BigInt bb, BigInt cc, BigInt dd)
 		{
-			//while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
-			//{
-			//	aa = aa / 10;
-			//	bb = bb / 10;
-			//	cc = cc / 10;
-			//	dd = dd / 10;
-			//}
+			while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
+			{
+				aa = aa / 10;
+				bb = bb / 10;
+				cc = cc / 10;
+				dd = dd / 10;
+			}
 			a = aa;
 			b = bb;
 			c = cc; 
@@ -130,8 +130,9 @@ namespace ember
 
 		static Plane fromPositionNormal(ivec3 p, ivec3 nor)
 		{
+			// Cramer's rule
 			return Plane (nor.x, nor.y, nor.z,
-				-(nor.x * p.x + nor.y * p.y + nor.z * p.z));
+				(nor.x * p.x + nor.y * p.y + nor.z * p.z));
 		}
 
 		static Plane fromTriangle(ivec3 p1, ivec3 p2, ivec3 p3)

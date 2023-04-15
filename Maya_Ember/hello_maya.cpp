@@ -111,7 +111,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 	}
 
 		ember::AABB bound;
-		int offset = 100;
+		int offset = 1000;
 		bound.max.x = maxX * BIG_NUM + offset;
 		bound.max.y = maxY * BIG_NUM + offset;
 		bound.max.z = maxZ * BIG_NUM + offset;
