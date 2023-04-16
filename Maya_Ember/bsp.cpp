@@ -18,56 +18,56 @@ BSPTree::~BSPTree()
 
 void BSPTree::Build(BSPNode* rootNode)
 {
-	nodes.clear();
-	nodes.push_back(rootNode);
+	//nodes.clear();
+	//nodes.push_back(rootNode);
 
-	// Create tree nodes recursively (in breadth first order)
-	std::queue<BSPNode*> toTraverse;
-	toTraverse.push(rootNode);
-	int tempCount = 0;
-	while (!toTraverse.empty())
-	{	
-		BSPNode* node = toTraverse.front();
-		toTraverse.pop();
+	//// Create tree nodes recursively (in breadth first order)
+	//std::queue<BSPNode*> toTraverse;
+	//toTraverse.push(rootNode);
+	//int tempCount = 0;
+	//while (!toTraverse.empty())
+	//{	
+	//	BSPNode* node = toTraverse.front();
+	//	toTraverse.pop();
 
-		// Leaf node determination
-		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
-			continue;
+	//	// Leaf node determination
+	//	if (node->polygons.size() <= LEAF_POLYGON_COUNT)
+	//		continue;
 
-		// Split AABB
-		Split(node);
+	//	// Split AABB
+	//	Split(node);
 
-		// Collect new nodes
-		if (node->leftChild != nullptr)
-		{
-			toTraverse.push(node->leftChild);
-			nodes.push_back(node->leftChild);
-		}
-		if (node->rightChild != nullptr)
-		{
-			toTraverse.push(node->rightChild);
-			nodes.push_back(node->rightChild);
-		}
+	//	// Collect new nodes
+	//	if (node->leftChild != nullptr)
+	//	{
+	//		toTraverse.push(node->leftChild);
+	//		nodes.push_back(node->leftChild);
+	//	}
+	//	if (node->rightChild != nullptr)
+	//	{
+	//		toTraverse.push(node->rightChild);
+	//		nodes.push_back(node->rightChild);
+	//	}
 
-		if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
-		{
-			break;
-		}
-	}
+	//	if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
+	//	{
+	//		break;
+	//	}
+	//}
 
-	printStr("Global BSP Construction Done");
+	//printStr("Global BSP Construction Done");
 
-	// Draw leaf nodes
-	for (int i = 0; i < nodes.size(); i++)
-	{
-		if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
-		drawBoundingBox(nodes[i]->bound);
-		drawPosition(nodes[i]->refPoint.pos);
-		for (int j = 0; j < nodes[i]->polygons.size(); j++)
-		{
-			drawPolygon(nodes[i]->polygons[j]);
-		}
-	}
+	//// Draw leaf nodes
+	//for (int i = 0; i < nodes.size(); i++)
+	//{
+	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
+	//	drawBoundingBox(nodes[i]->bound);
+	//	drawPosition(nodes[i]->refPoint.pos);
+	//	for (int j = 0; j < nodes[i]->polygons.size(); j++)
+	//	{
+	//		drawPolygon(nodes[i]->polygons[j]);
+	//	}
+	//}
 	//printStr("WNV vectors for leaf nodes: ");
 	//for (int i = 0; i < nodes.size(); i++)
 	//{
@@ -86,6 +86,15 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	BuildLocalBSP(leaf);
 	//	FaceClassification(leaf);
 	//}
+
+	// 1. Use the first polygon in rootNode to build a local tree
+	LocalBSPTree* localTree = new LocalBSPTree(0, rootNode);
+
+	// 2. Intersect with the other polygon
+	std::vector<Segment> segments = localTree->IntersectWithPolygon(rootNode->polygons[1]);
+
+	// 3. Draw segments
+
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -208,6 +217,7 @@ void BSPTree::BuildLocalBSP(BSPNode* leaf)
 	for (int j = 0; j < leaf->polygons.size(); j++)
 	{
 		LocalBSPTree* localTree = new LocalBSPTree(j, leaf);
+		localTree->Build(leaf);
 		leaf->localTrees.push_back(localTree);
 	}
 }
@@ -466,7 +476,14 @@ LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 	//printPolygon(*(root->polygon));
 	nodes.push_back(root);
 	mark = index; // The mark is its index in the leaf BSP node
+}
 
+LocalBSPTree::~LocalBSPTree()
+{
+}
+
+void LocalBSPTree::Build(BSPNode* leaf)
+{
 	// Add segment by intersecting with all other polygons in the same leaf node
 	for (int i = 0; i < leaf->polygons.size(); i++)
 	{
@@ -476,20 +493,16 @@ LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 		}
 
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
-		
+
 		for (int j = 0; j < segments.size(); j++)
 		{
 			Point v0 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound1);
 			Point v1 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound2);
 			Plane s = leaf->polygons[i]->support;
-			
-			AddSegment(root, v0, v1, s, i);
+
+			AddSegment(nodes[0], v0, v1, s, i);
 		}
 	}
-}
-
-LocalBSPTree::~LocalBSPTree()
-{
 }
 
 void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark)

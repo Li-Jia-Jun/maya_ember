@@ -59,6 +59,7 @@ namespace ember
 	public:
 		LocalBSPTree(int index, BSPNode* leaf);
 		~LocalBSPTree();
+		void Build(BSPNode* leaf);
 		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);	
 		void CollectPolygons(std::vector<Polygon*>& container);
 		std::vector<Segment> IntersectWithPolygon(Polygon* p2);
