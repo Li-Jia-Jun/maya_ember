@@ -6,14 +6,6 @@ namespace ember
 	class LocalBSPTree;
 
 
-
-	struct RefPoint
-	{
-		ivec3 pos;			
-		std::vector<int> WNV;
-	};
-
-
 	// Global BSP for AABB subdivision
 
 	struct BSPNode
@@ -39,7 +31,6 @@ namespace ember
 		Point FindPolygonInteriorSimple(Polygon* polygon);
 		Point FindPolygonInteriorComplex(Polygon* polygon);
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
-		std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
 		// LEO::to be updated with the new segment method
 		//std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
 		Segment FindPathBackToRefPoint(RefPoint ref, Point x);

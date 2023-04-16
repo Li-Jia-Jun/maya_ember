@@ -21,7 +21,7 @@ namespace ember
 
 #define GLOBAL_BSP_NODE_COUNT (7)
 
-#define AABB_ADJUST ivec3{BigInt(1000), BigInt(1000), BigInt(1000)}
+#define POINT_AABB ivec3{BigInt(1000), BigInt(1000), BigInt(1000)}
 
 #define BIG_NUM 100000
 
@@ -75,6 +75,8 @@ namespace ember
 	/// </summary>
 	Segment getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis);
 
+	std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
+
 	/// <summary>
 	/// Split the polygon with a plane and create two new polygons
 	/// - the bounds of new polygons are in order
@@ -103,13 +105,15 @@ namespace ember
 	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
 
 	void printStr(const char*);
+	void printVector(std::vector<int> vec);
 	void printNum(BigInt);
 	void printIvec3(ivec3);
 	void printPoint(Point);
 	void printPlane(Plane);
-	void printPolygon(Polygon);
+	void printPolygon(Polygon*);
 	void drawPolygon(Polygon*);
 	void drawBoundingBox(AABB);
+	void drawPosition(ivec3);
 }
 
 

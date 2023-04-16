@@ -86,14 +86,29 @@ bool ember::isPlaneEqual(Plane p1, Plane p2)
 
 bool ember::isPointInPolygon(Polygon* polygon, Point point)
 {
+	bool outside = false;
 	for (int i = 0; i < polygon->bounds.size(); i++)
 	{
 		int c = classify(point, polygon->bounds[i]);
-		if (c >= 0)	// Points on polygon edge are also considered 'exterior'
+		if (c > 0)	// Points on polygon edge are considered 'inside'
 		{
-			return false;
+			outside = true;
+			break;
 		}
 	}
+	
+	//printStr("point inside polygon!");
+	//Point p = getPolygonPoint(polygon, 0);
+	//drawPosition(p.getPosition());
+	//for (int i = 0; i < polygon->bounds.size(); i++)
+	//{
+	//	int c = classify(p, polygon->bounds[i]);
+	//	printNum(c);
+	//}
+	//drawPosition(p.getPosition());
+	//drawPolygon(polygon);
+
+	if (outside) return false;
 	return true;
 }
 
@@ -218,49 +233,21 @@ Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 	case 0:	// X axis (Line planes are XY, XZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
-
 		// Make sure all bound planes orient outside
-		if (edPos.x > stPos.x)
-		{
-			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ -1, 0, 0 });
-			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
-		}
-		else
-		{
-			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ -1, 0, 0 });
-		}
+		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ -1, 0, 0 });
+		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
 		break;
 	case 1:	// Y axis (Line planes are XY, YZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-
-		if (edPos.y > stPos.y)
-		{
-			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, -1, 0 });
-			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
-		}
-		else
-		{
-			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
-			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, -1, 0 });
-		}
+		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, -1, 0 });
+		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
 		break;
 	case 2:	// Z axis (Line planes are XZ, YZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-
-		if (edPos.z > stPos.z)
-		{
-			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, -1 });
-			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });
-		}
-		else
-		{
-			segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
-			segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, -1 });
-		}
-		break;
+		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, -1 });
+		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });;
 	default:
 		break;
 	}
@@ -268,6 +255,41 @@ Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 	segment.line = line;
 
 	return segment;
+}
+
+std::vector<int> ember::TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV)
+{
+	bool hasIntersect = intersectSegmentPolygon(polygon, segment).x4 != 0;
+	if (hasIntersect)
+	{
+		Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
+		Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
+		ivec3 dir = ed.getPosition() - st.getPosition();
+
+		//printStr("trace segment intersect, st, ed = ");
+		//drawPolygon(polygon);
+		//drawPosition(st.getPosition());
+		//drawPosition(ed.getPosition());
+
+		BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
+		if (sign > 0)
+		{
+			// Segment is going out
+			WNV[polygon->meshId] = WNV[polygon->meshId] - 1;
+		}
+		else if (sign < 0)
+		{
+			// Segment is going in
+			WNV[polygon->meshId] = WNV[polygon->meshId] + 1;
+		}
+		else
+		{
+			// Segment lays on the polygon (impossible under our assumption?)
+			printStr("ERROR: trace segment lies on the polygon!!");
+		}
+	}
+
+	return WNV;
 }
 
 std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitPlane)
@@ -417,10 +439,12 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 		return x;
 	}
 
+	//printStr("line polygon intersect!");
+
 	// If intersection point is not within segment
 	int c1 = classify(x, segment.bound1);
 	int c2 = classify(x, segment.bound2);
-	if (c1 >= 0 || c2 >= 0) // Points right on the segment end are considered 'exterior'
+	if (c1 > 0 || c2 > 0) // Points right on the segment end are considered 'interior'
 	{
 		x.x4 = 0; 
 	}
@@ -475,7 +499,7 @@ Polygon* ember::fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int 
 	{
 		ivec3 p1 = posVec[i];
 		ivec3 p2 = posVec[(i + 1) % count];
-		ivec3 edgeDir = p2 - p1;
+		ivec3 edgeDir = p1 - p2;
 
 		// If the vertex order follows the right hand rule
 		// the calculated bound plane normal will orient outside
@@ -491,6 +515,15 @@ void ember::printStr(const char* str)
 	char buffer[1024];
 	sprintf_s(buffer, str);
 	MGlobal::displayInfo(buffer);
+}
+
+void ember::printVector(std::vector<int> vec)
+{
+	printStr("vec: ");
+	for (int i = 0; i < vec.size(); i++)
+	{
+		printNum(vec[i]);
+	}
 }
 
 void ember::printNum(BigInt n)
@@ -524,18 +557,18 @@ void ember::printPlane(ember::Plane p)
 	MGlobal::displayInfo(buffer);
 }
 
-void ember::printPolygon(ember::Polygon p)
+void ember::printPolygon(ember::Polygon* p)
 {
 	char buffer[1024];
 	sprintf_s(buffer, "support plane: ");
 	MGlobal::displayInfo(buffer);
-	ember::printPlane(p.support);
+	ember::printPlane(p->support);
 
 	sprintf_s(buffer, "bounds: ");
 	MGlobal::displayInfo(buffer);
-	for (int i = 0; i < p.bounds.size(); i++)
+	for (int i = 0; i < p->bounds.size(); i++)
 	{
-		ember::printPlane(p.bounds[i]);
+		ember::printPlane(p->bounds[i]);
 	}
 }
 
@@ -659,4 +692,13 @@ void ember::drawBoundingBox(AABB boundingBox)
 	overrideShadingPlug.setValue(0);
 
 	count++;
+}
+
+void ember::drawPosition(ivec3 pos)
+{
+	// Draw Ref point using AABB
+	AABB refPointAABB;
+	refPointAABB.min = pos - POINT_AABB;
+	refPointAABB.max = pos + POINT_AABB;
+	drawBoundingBox(refPointAABB);
 }

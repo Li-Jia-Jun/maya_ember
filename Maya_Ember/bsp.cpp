@@ -62,11 +62,18 @@ void BSPTree::Build(BSPNode* rootNode)
 	{
 		if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
 		drawBoundingBox(nodes[i]->bound);
+		drawPosition(nodes[i]->refPoint.pos);
 		for (int j = 0; j < nodes[i]->polygons.size(); j++)
 		{
 			drawPolygon(nodes[i]->polygons[j]);
 		}
 	}
+	//printStr("WNV vectors for leaf nodes: ");
+	//for (int i = 0; i < nodes.size(); i++)
+	//{
+	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
+	//	printVector(nodes[i]->refPoint.WNV);
+	//}
 
 	// Handle leaf node
 	//for (int i = 0; i < nodes.size(); i++)
@@ -235,8 +242,8 @@ void BSPTree::Split(BSPNode* node)
 		midValue = BigInt((min.z + max.z) / BigInt(2));
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
-	//printStr("split plane = ");
-	//printPlane(splitPlane);
+	printStr("split plane = ");
+	printPlane(splitPlane);
 
 	// Divide polygons by split plane
 	std::vector<Polygon*> leftPolygons;
@@ -255,8 +262,6 @@ void BSPTree::Split(BSPNode* node)
 		}
 	}
 
-	//printStr("=============== to create new nodes ==================");
-
 	// Left Node
 	// - Max bound changes to middle point
 	// - RefPoint remains the same
@@ -264,6 +269,7 @@ void BSPTree::Split(BSPNode* node)
 	{
 		BSPNode* leftNode = new BSPNode();
 		leftNode->polygons = leftPolygons;
+		node->leftChild = leftNode;
 		switch (axis)
 		{
 		case 0:
@@ -277,11 +283,8 @@ void BSPTree::Split(BSPNode* node)
 			break;
 		default:
 			break;
-		}
-		leftNode->bound.min = leftNode->bound.min - AABB_ADJUST;
-		leftNode->bound.max = leftNode->bound.max + AABB_ADJUST;
+		}		
 		leftNode->refPoint = node->refPoint;
-		node->leftChild = leftNode;
 	}
 
 	// Right Node
@@ -291,7 +294,7 @@ void BSPTree::Split(BSPNode* node)
 	{
 		BSPNode* rightNode = new BSPNode();
 		rightNode->polygons = rightPolygons;
-
+		node->rightChild = rightNode;
 		switch (axis)
 		{
 		case 0:
@@ -306,10 +309,7 @@ void BSPTree::Split(BSPNode* node)
 		default:
 			break;
 		}
-		//rightNode->refPoint = TraceRefPoint(node, axis);
-		rightNode->bound.min = rightNode->bound.min - AABB_ADJUST;
-		rightNode->bound.max = rightNode->bound.max + AABB_ADJUST;
-		node->rightChild = rightNode;
+		rightNode->refPoint = TraceRefPoint(node, axis);
 	}
 }
 
@@ -337,35 +337,6 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 	}
 
 	return refPoint;
-}
-
-std::vector<int> BSPTree::TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV)
-{
-	bool hasIntersect = intersectSegmentPolygon(polygon, segment).x4 != 0;
-	if (hasIntersect)
-	{
-		Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
-		Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
-		ivec3 dir = ed.getPosition() - st.getPosition();
-
-		BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
-		if(sign > 0)
-		{
-			// Segment is going out
-			WNV[polygon->meshId] = WNV[polygon->meshId] - 1;
-		}
-		else if(sign < 0)
-		{
-			// Segment is going in
-			WNV[polygon->meshId] = WNV[polygon->meshId] + 1;
-		}
-		else
-		{
-			// Segment lays on the polygon (impossible under our assumption?)
-		}	
-	}
-
-	return WNV;
 }
 
 //std::vector<Segment> BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)

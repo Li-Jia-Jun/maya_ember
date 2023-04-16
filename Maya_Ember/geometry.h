@@ -92,6 +92,13 @@ namespace ember
 	{
 		ivec3 min, max;
 	};
+	
+	struct RefPoint
+	{
+		ivec3 pos;
+		std::vector<int> WNV;
+	};
+
 	struct Plane
 	{
 		// ax + by + cz = d (This is the representation in Cramer's rule
