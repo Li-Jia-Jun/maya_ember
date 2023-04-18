@@ -49,43 +49,33 @@ void EMBER::SetInitBound(AABB bound)
 
 void EMBER::BuildBSPTree()
 {
-	//printStr("polygon:");
-	//printPolygon(polygons[0]);
-	//printPolygon(polygons[1]);
-
-	//drawPolygon(polygons[0]);
-
-	//drawPosition(getPolygonPoint(polygons[0], 0).getPosition());
-	//drawPosition(getPolygonPoint(polygons[0], 1).getPosition());
-	//drawPosition(getPolygonPoint(polygons[0], 2).getPosition());
-
 	// Temp test code
-	std::vector<int> WNV{ 0, 0 };
-	Segment segment{ Line{Plane(0, 1, 0, 0), Plane(0, 0, 1, 0)}, Plane(-1, 0, 0, BigInt(BIG_NUM_STR)),  Plane(1, 0, 0, 0) };
-	Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
-	Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
-	if (st.isValid() && ed.isValid())
-	{
-		drawPosition(st.getPosition());
-		drawPosition(ed.getPosition());
-	}
-	WNV = TraceSegment(polygons, segment, WNV);
-	printStr("trace result");
-	printNum(WNV[0]);
+	//std::vector<int> WNV{ 0, 0 };
+	//Segment segment{ Line{Plane(0, 1, 0, 0), Plane(0, 0, 1, 0)}, Plane(-1, 0, 0, BigInt(BIG_NUM_STR)),  Plane(1, 0, 0, 0) };
+	//Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
+	//Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
+	//if (st.isValid() && ed.isValid())
+	//{
+	//	drawPosition(st.getPosition());
+	//	drawPosition(ed.getPosition());
+	//}
+	//WNV = TraceSegment(polygons, segment, WNV);
+	//printStr("trace result");
+	//printNum(WNV[0]);
 
 
 
 	// Build root node
-	//BSPNode *root = new BSPNode();
-	//root->bound = initBound;
-	//root->polygons = polygons;
+	BSPNode *root = new BSPNode();
+	root->bound = initBound;
+	root->polygons = polygons;
 
 	// Create initial ref point in the min corner of AABB  
-	//RefPoint refPoint;
-	//refPoint.pos = initBound.min;
-	//refPoint.WNV = std::vector<int>(meshId, 0);
-	//root->refPoint = refPoint;
+	RefPoint refPoint;
+	refPoint.pos = initBound.min;
+	refPoint.WNV = std::vector<int>(meshId, 0);
+	root->refPoint = refPoint;
 
 	// Build BSP tree based on root node
-	//bspTree.Build(root);
+	bspTree.Build(root);
 }

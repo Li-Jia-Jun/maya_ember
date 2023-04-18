@@ -91,15 +91,6 @@ bool ember::isPointInPolygon(Polygon* polygon, Point point)
 		}
 	}
 
-	if (outside)
-	{
-		printStr("point outside polygon!");
-	}
-	else
-	{
-		printStr("point inside polygon!");
-	}
-
 	if (outside) return false;
 	return true;
 }
@@ -434,9 +425,6 @@ Point ember::intersectLinePolygon(Polygon* polygon, Line line)
 {
 	Point x = intersect(polygon->support, line.p1, line.p2);
 
-	printStr("intersect line polygon:");
-	printPoint(x);
-
 	// If intersection is not unique
 	if (x.x4 == 0)
 	{
@@ -459,12 +447,26 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 	// If line intersection is invalid 
 	if (x.x4 == 0)
 	{
-		return x;
+		if (x.x1 == 0 && x.x2 == 0 && x.x3 == 0) // When line parallel to the polygon
+		{
+			Point p1 = intersect(segment.bound1, segment.line.p1, segment.line.p2);
+			Point p2 = intersect(segment.bound2, segment.line.p1, segment.line.p2);
+			bool b1 = isPointInPolygon(polygon, p1); // Check if line is on polygon
+			bool b2 = isPointInPolygon(polygon, p2);
+			if (!b1 && !b2)
+			{
+				return x;
+			}
+			else
+			{
+				return b1 == true ? p1 : p2;
+			}
+		}
+		else
+		{
+			return x;
+		}
 	}
-
-	drawPosition(x.getPosition());
-
-	//printStr("line polygon intersect!");
 
 	// If intersection point is not within segment
 	int c1 = classify(x, segment.bound1);

@@ -22,50 +22,50 @@ void BSPTree::Build(BSPNode* rootNode)
 	nodes.push_back(rootNode);
 
 	// Create tree nodes recursively (in breadth first order)
-	std::queue<BSPNode*> toTraverse;
-	toTraverse.push(rootNode);
-	int tempCount = 0;
-	while (!toTraverse.empty())
-	{	
-		BSPNode* node = toTraverse.front();
-		toTraverse.pop();
+	//std::queue<BSPNode*> toTraverse;
+	//toTraverse.push(rootNode);
+	//int tempCount = 0;
+	//while (!toTraverse.empty())
+	//{	
+	//	BSPNode* node = toTraverse.front();
+	//	toTraverse.pop();
 
-		// Leaf node determination
-		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
-			continue;
+	//	// Leaf node determination
+	//	if (node->polygons.size() <= LEAF_POLYGON_COUNT)
+	//		continue;
 
-		// Split AABB
-		Split(node);
+	//	// Split AABB
+	//	Split(node);
 
-		// Collect new nodes
-		if (node->leftChild != nullptr)
-		{
-			toTraverse.push(node->leftChild);
-			nodes.push_back(node->leftChild);
-		}
-		if (node->rightChild != nullptr)
-		{
-			toTraverse.push(node->rightChild);
-			nodes.push_back(node->rightChild);
-		}
-		if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
-		{
-			break;
-		}
-	}
-	printStr("Global BSP Construction Done");
+	//	// Collect new nodes
+	//	if (node->leftChild != nullptr)
+	//	{
+	//		toTraverse.push(node->leftChild);
+	//		nodes.push_back(node->leftChild);
+	//	}
+	//	if (node->rightChild != nullptr)
+	//	{
+	//		toTraverse.push(node->rightChild);
+	//		nodes.push_back(node->rightChild);
+	//	}
+	//	if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
+	//	{
+	//		break;
+	//	}
+	//}
+	//printStr("Global BSP Construction Done");
 
 	// Draw leaf nodes
-	for (int i = 0; i < nodes.size(); i++)
-	{
-		if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
-		drawBoundingBox(nodes[i]->bound);
-		drawPosition(nodes[i]->refPoint.pos);
-		for (int j = 0; j < nodes[i]->polygons.size(); j++)
-		{
-			drawPolygon(nodes[i]->polygons[j]);
-		}
-	}
+	//for (int i = 0; i < nodes.size(); i++)
+	//{
+	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
+	//	drawBoundingBox(nodes[i]->bound);
+	//	drawPosition(nodes[i]->refPoint.pos);
+	//	for (int j = 0; j < nodes[i]->polygons.size(); j++)
+	//	{
+	//		drawPolygon(nodes[i]->polygons[j]);
+	//	}
+	//}
 	//printStr("WNV vectors for leaf nodes: ");
 	//for (int i = 0; i < nodes.size(); i++)
 	//{
@@ -84,6 +84,13 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	BuildLocalBSP(leaf);
 	//	FaceClassification(leaf);
 	//}
+
+	// Intersection test
+	LocalBSPTree* localTree = new LocalBSPTree(0, rootNode);
+	std::vector<Segment> segs = localTree->IntersectWithPolygon(rootNode->polygons[1]);
+	for (int i = 0; i < segs.size(); i++) {
+		drawSegment(segs[i]);
+	}
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -560,14 +567,15 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 	Polygon* p1 = nodes[0]->polygon;
 	std::vector<Segment> segments;
 
-	// Check how many distinct points p1 will intersect with p2
+	// Check how many distinct points p1 p2 intersect with each other
+	// POTENTIAL OPTIMIZATION: COMBINE THESE TWO FOR LOOPS
 	std::vector<Point> points;
 	for (int i = 0; i < p1->bounds.size(); i++)
 	{
 		Point point = intersectSegmentPolygon(p2, getPolygonSegment(p1, i));
 
 		if (!point.isValid())
-			continue;
+			continue;	
 
 		if (points.empty())
 		{
@@ -577,7 +585,7 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 		{
 			ivec3 pos1 = points[0].getPosition();
 			ivec3 pos2 = point.getPosition();
-			if (pos1 != pos2)
+			if (!isPositionEqual(pos1, pos2))
 			{
 				points.push_back(point);
 				break;  // 2 intersect points are sufficient to distinguish 
@@ -585,15 +593,44 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 			}
 		}
 	}
+	if (points.size() < 2)
+	{
+		for (int i = 0; i < p2->bounds.size(); i++)
+		{
+			Point point = intersectSegmentPolygon(p1, getPolygonSegment(p2, i));
 
+			if (!point.isValid())
+				continue;
+
+			if (points.empty())
+			{
+				points.push_back(point);
+			}
+			else
+			{
+				ivec3 pos1 = points[0].getPosition();
+				ivec3 pos2 = point.getPosition();
+				if (!isPositionEqual(pos1, pos2))
+				{
+					points.push_back(point);
+					break;  // 2 intersect points are sufficient to distinguish 
+							// between intersecting on a point or an overlapping area
+				}
+			}
+		}
+	}
+
+	
 	ivec3 nor1 = p1->support.getNormal();
 	ivec3 nor2 = p2->support.getNormal();
 	bool planeParallel = isDirectionEqual(nor1, nor2);
 	if (planeParallel)
 	{
+		printStr("plane is parallel, point size = ");
+		printNum(points.size());
 		if (points.size() >= 2)
 		{
-			// C4: intersection forms a polygon (collect all p2's edges)		
+			// C4: intersection forms a polygon (collect all p2's edges)
 			for (int i = 0; i < p2->bounds.size(); i++)
 			{
 				segments.push_back(getPolygonSegment(p2, i));

@@ -64,13 +64,6 @@ namespace ember
 
 		Point(BigInt xx1, BigInt xx2, BigInt xx3, BigInt xx4)
 		{
-			while (xx1 % 10 == 0 && xx2 % 10 == 0 && xx3 % 10 == 0 && xx4 % 10 == 0)
-			{
-				xx1 = xx1 / 10;
-				xx2 = xx2 / 10;
-				xx3 = xx3 / 10;
-				xx4 = xx4 / 10;
-			}
 			x1 = xx1;
 			x2 = xx2;
 			x3 = xx3;
@@ -107,13 +100,6 @@ namespace ember
 
 		Plane(BigInt aa, BigInt bb, BigInt cc, BigInt dd)
 		{
-			while (aa % 10 == 0 && bb % 10 == 0 && cc % 10 == 0 && dd % 10 == 0)
-			{
-				aa = aa / 10;
-				bb = bb / 10;
-				cc = cc / 10;
-				dd = dd / 10;
-			}
 			a = aa;
 			b = bb;
 			c = cc; 
@@ -170,39 +156,5 @@ namespace ember
 		int meshId;
 		Plane support;
 		std::vector<Plane> bounds;
-
-		//static Polygon* fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
-		//{
-		//	// Compute support plane
-		//	ivec3 p0 = posVec[0];
-		//	Plane support = Plane::fromPositionNormal(p0, normal);
-		//	//char buffer[128];
-		//	//sprintf_s(buffer, "Support p0: %i %i %i", p0.x, p0.y, p0.z);
-		//	//MString debug(buffer);
-		//	//MGlobal::displayInfo(buffer);
-		//	//sprintf_s(buffer, "Support: a: %i b: %i c: %i d: %i", support.a, support.b, support.c, support.d);
-		//	//MGlobal::displayInfo(buffer);
-
-		//	// Compute bound plane for each edge
-		//	// (assume that bound plane is perpendicular to support plane)
-		//	std::vector<Plane> bounds;
-		//	int count = posVec.size();
-		//	for (int i = 0; i < count; i++)
-		//	{
-		//		ivec3 p1 = posVec[i];
-		//		ivec3 p2 = posVec[(i + 1) % count];
-		//		ivec3 edgeDir = p2 - p1;
-
-		//		// If the vertex order follows the right hand rule
-		//		// the calculated bound plane normal will orient outside
-		//		ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);	
-
-		//		//printIvec3(nor);
-
-		//		bounds.push_back(Plane::fromPositionNormal(p1, nor));
-		//	}
-
-		//	return new Polygon{ meshId, support, bounds };
-		//}
 	};
 }
