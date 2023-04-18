@@ -79,6 +79,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <TargetExt> .mll</TargetExt>
+    <OutDir>$(SolutionDir)\$(ProjectName)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -143,13 +144,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BigFloat.h" />
+    <ClInclude Include="BigInt.hpp" />
     <ClInclude Include="bsp.h" />
     <ClInclude Include="ember.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="hello_maya.h" />
+    <ClInclude Include="maya_util.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BigFloat.cc" />
+    <ClCompile Include="BigInt.cpp" />
     <ClCompile Include="bsp.cpp" />
     <ClCompile Include="ember.cpp" />
     <ClCompile Include="hello_maya.cpp" />

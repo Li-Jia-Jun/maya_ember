@@ -1,22 +1,9 @@
 #pragma once
-
 #include "util.h"
-
 
 namespace ember
 {
 	class LocalBSPTree;
-
-	struct AABB 
-	{
-		ivec3 min, max;
-	};
-
-	struct RefPoint
-	{
-		ivec3 pos;			
-		std::vector<int> WNV;
-	};
 
 
 	// Global BSP for AABB subdivision
@@ -44,8 +31,10 @@ namespace ember
 		Point FindPolygonInteriorSimple(Polygon* polygon);
 		Point FindPolygonInteriorComplex(Polygon* polygon);
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
-		std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
-		std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
+		// LEO::to be updated with the new segment method
+		//std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
+		Segment FindPathBackToRefPoint(RefPoint ref, Point x);
+
 		bool WNVBoolean(std::vector<int> WNV);
 		
 	private:
@@ -70,6 +59,7 @@ namespace ember
 	public:
 		LocalBSPTree(int index, BSPNode* leaf);
 		~LocalBSPTree();
+		void Build(BSPNode* leaf);
 		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);	
 		void CollectPolygons(std::vector<Polygon*>& container);
 		std::vector<Segment> IntersectWithPolygon(Polygon* p2);

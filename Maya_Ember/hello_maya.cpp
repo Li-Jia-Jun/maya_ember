@@ -3,23 +3,43 @@
 
 // define EXPORT for exporting dll functions
 #define EXPORT _declspec(dllexport)
-#define BIG_NUM 100000
+
 
 // Maya Plugin creator function
 void* helloMaya::creator()
 {
 	return new helloMaya;
 }
+
 // Plugin doIt function
 MStatus helloMaya::doIt(const MArgList& argList)
 {
 	MStatus status;
-	MGlobal::displayInfo("Reticuleana");
-	// <<<your code goes here>>>
+
+	MSyntax syntax;
+	status = syntax.addFlag("-u", "-union", MSyntax::kString);
+	status = syntax.addFlag("-i", "-intersection", MSyntax::kString);
+	status = syntax.addFlag("-s", "subtraction", MSyntax::kString);
+
+
+	MArgParser argParser(syntax, argList);
+	unsigned int num_of_flag_used = argParser.numberOfFlagsUsed();
+	if (num_of_flag_used > 1)
+	{
+		MGlobal::displayInfo("Error: multiple Boolean operations are selected");
+		return status;
+	}
+
 
 	MSelectionList selectionList;
 	MGlobal::getActiveSelectionList(selectionList);
-	
+
+	ember::EMBER ember = ember::EMBER();
+	// For finding the bound
+	float minX = 100000000, minY = 100000000, minZ = 100000000, maxX = -100000000, maxY = -100000000, maxZ = -100000000;
+
+	BigFloat bf(BIG_NUM_STR);
+
 	// Iterating through all the selected mesh objects
 	for (int i = 0; i < selectionList.length(); i++)
 	{
@@ -30,34 +50,30 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		MFnMesh mesh(dagPath); // Create an MFnMesh object from the selected object
 		MItMeshPolygon polygonIt(dagPath);
 
-		ember::EMBER ember = ember::EMBER();
 		std::vector<std::vector<ember::ivec3>> vertices;
 		std::vector<ember::ivec3> normals;
 
-		float minX = 100000000, minY = 100000000, minZ = 100000000, maxX = -100000000, maxY = -100000000, maxZ = -100000000;
 		MString meshName(dagPath.partialPathName());
 		MGlobal::displayInfo(meshName);
 
-		// Note: here we assume the mesh is a pure triangle mesh
-		// Iterate through triangulated polygons and add their vertices and normals
+		// Iterate through polygons and add their vertices and normals
 		for (; !polygonIt.isDone(); polygonIt.next())
 		{
 			MPointArray pointArray;
-			MIntArray triangleVerts;
 			MVector normal;
-			polygonIt.getTriangle(0, pointArray, triangleVerts, MSpace::kObject);
-
-			// Get the normal of the current triangle
-			polygonIt.getNormal(normal, MSpace::kObject);
-			ember::ivec3 emberNormal;
-			emberNormal.x = normal.x;
-			emberNormal.y = normal.y;
-			emberNormal.z = normal.z;
+	
+			// Get the normal and verts of the current face
+			polygonIt.getPoints(pointArray, MSpace::kWorld, &status);
+			polygonIt.getNormal(normal, MSpace::kWorld);
+			BigInt x = ember::bigFloatToBigInt(normal.x * bf);
+			BigInt y = ember::bigFloatToBigInt(normal.y * bf);
+			BigInt z = ember::bigFloatToBigInt(normal.z * bf);
+			ember::ivec3 emberNormal{ x, y, z };
 			normals.push_back(emberNormal);
 
-			// Each triangles have 3 vertices
-			std::vector<ember::ivec3 > emberVerts;
-			for (int k = 0; k < 3; k++)
+			std::vector<ember::ivec3 > polyVerts;
+		
+			for (int k = 0; k < polygonIt.polygonVertexCount(); k++)
 			{
 				MPoint point = pointArray[k];
 				if (point.x < minX)
@@ -86,101 +102,49 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				}
 
 				// Scale the vert pos to a big enough number
-				ember::ivec3 emberVert;
-				emberVert.x = point.x * BIG_NUM;
-				emberVert.y = point.y * BIG_NUM;
-				emberVert.z = point.z * BIG_NUM;
-				emberVerts.push_back(emberVert);
+				BigInt px = ember::bigFloatToBigInt(point.x * bf);
+				BigInt py = ember::bigFloatToBigInt(point.y * bf);
+				BigInt pz = ember::bigFloatToBigInt(point.z * bf);
+				ember::ivec3 vert{px, py, pz};
+				polyVerts.push_back(vert);
 			}
-			vertices.push_back(emberVerts);
+			vertices.push_back(polyVerts);
 		}
 
 		// Load the data into an ember
 		ember.ReadMeshData(vertices, normals);
-		ember::AABB bound;
-		bound.max.x = maxX * BIG_NUM;
-		bound.max.y = maxY * BIG_NUM;
-		bound.max.z = maxZ * BIG_NUM;
-		bound.min.x = minX * BIG_NUM;
-		bound.min.y = minY * BIG_NUM;
-		bound.min.z = minZ * BIG_NUM;
-		ember.SetInitBound(bound);
-
-	
-		ember.BuildBSPTree();
-	
 	}
 
+		ember::AABB bound;
+		int offset = 1000;
+		bound.max.x = ember::bigFloatToBigInt(BigFloat(maxX) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.max.y = ember::bigFloatToBigInt(BigFloat(maxY) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.max.z = ember::bigFloatToBigInt(BigFloat(maxZ) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.x = ember::bigFloatToBigInt(BigFloat(minX) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.y = ember::bigFloatToBigInt(BigFloat(minY) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.z = ember::bigFloatToBigInt(BigFloat(minZ) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		ember.SetInitBound(bound);
 
+		// The algorithm starts here
+		ember.BuildBSPTree();
 
-		// Try drawing a simple box with some given verts
-		
-		// It seems that the vert must be counter clock wise
-		MPointArray vertices;
-		vertices.append(MPoint(-0.5, 0.5, 0.5));
-		vertices.append(MPoint(0.5, 0.5, 0.5));
-		vertices.append(MPoint(0.5, -0.5, 0.5));
-		vertices.append(MPoint(-0.5, -0.5, 0.5));
-		vertices.append(MPoint(-0.5, 0.5, -0.5));
-		vertices.append(MPoint(0.5, 0.5, -0.5));
-		vertices.append(MPoint(0.5, -0.5, -0.5));
-		vertices.append(MPoint(-0.5, -0.5, -0.5));
-
-		// num of verts for each face
-		MIntArray vertCount;
-		for (int i = 0; i < 6; i++)
+		if (argParser.isFlagSet("-u"))
 		{
-			vertCount.append(4);
+			MGlobal::displayInfo("Reticuleana: Union");
+		}
+		else if (argParser.isFlagSet("-i"))
+		{
+			MGlobal::displayInfo("Reticuleana: Intersection");
+		}
+		else if (argParser.isFlagSet("-s"))
+		{
+			MGlobal::displayInfo("Reticuleana: Subtraction");
+		}
+		else
+		{
+			MGlobal::displayInfo("Error: no Boolean operation is selected");
 		}
 
-		int faceConnectsArray[] = { 3, 2, 1, 0, 2, 6, 5, 1, 6, 7, 4, 5, 7, 3, 0, 4, 0, 1, 5, 4, 7, 6, 2, 3};
-		MIntArray vertList(faceConnectsArray, 24);
-
-		MFnMesh meshFn;
-
-		MIntArray faceList;
-		for (int i = 0; i < 6; i++)
-		{
-			faceList.append(i);
-		}
-
-		MFnTransform transformFn;
-		MObject transformObj = transformFn.create();
-		transformFn.setName("BooleanaResult");
-
-		
-		MObject meshObj = meshFn.create(
-			vertices.length(),	// num of verts
-			vertCount.length(),	// num of polygons
-			vertices,	// vert pos array
-			vertCount,	// polygon count array
-			vertList,	// polygon connects
-			transformObj	//parent object
-		);
-		meshFn.setName("ResultShape");
-		MGlobal::executeCommand("sets -add initialShadingGroup ResultShape;");
-
-
-		/* PRINT DEBUGGING INFO */
-		//for (int i = 0; i < vertices.size(); i++)
-		//{
-		//	char buffer[128];
-		//	sprintf_s(buffer, " Vertex %i - 0: (%i, %i, %i)", i, vertices[i][0].x, vertices[i][0].y, vertices[i][0].z);
-		//	MGlobal::displayInfo(buffer);
-		//	sprintf_s(buffer, " Vertex %i - 1: (%i, %i, %i)", i, vertices[i][1].x, vertices[i][1].y, vertices[i][1].z);
-		//	MGlobal::displayInfo(buffer);
-		//	sprintf_s(buffer, " Vertex %i - 2: (%i, %i, %i)", i, vertices[i][2].x, vertices[i][2].y, vertices[i][2].z);
-		//	MGlobal::displayInfo(buffer);
-		//for (int i = 0; i < normals.size(); i++)
-		//{
-		//	char buffer[128];
-		//	sprintf_s(buffer, " Normal %i: (%i, %i, %i)", i, normals[i].x, normals[i].y, normals[i].z);
-		//	MGlobal::displayInfo(buffer);
-		//}
-		//char buffer[128];
-		//sprintf_s(buffer, " bound: max: (%i, %i, %i), min: (%i, %i, %i)", bound.max.x, bound.max.y, bound.max.z, bound.min.x, bound.min.y, bound.min.z);
-		//MGlobal::displayInfo(buffer);
-		//}
 	return status;
 }
 
@@ -192,6 +156,12 @@ EXPORT MStatus initializePlugin(MObject obj)
 	status = plugin.registerCommand("helloMaya", helloMaya::creator);
 	if (!status)
 		status.perror("registerCommand failed");
+
+	// Auto register Mel menu script
+	char buffer[2048];
+	sprintf_s(buffer, 2048, "source \"%s/EmberUI.mel\";", plugin.loadPath().asChar());
+	MGlobal::executeCommand(buffer, true);
+
 	return status;
 }
 // Cleanup Plugin upon unloading

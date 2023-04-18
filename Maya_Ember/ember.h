@@ -15,6 +15,7 @@ namespace ember
 
 		void BuildBSPTree();
 
+
 	private:
 		int meshId;							// Incremental count of meshes
 		std::vector<Polygon*> polygons;		// Initial polygon soup

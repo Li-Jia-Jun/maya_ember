@@ -1,33 +1,54 @@
 #pragma once
-
 #include "geometry.h"
 #include <utility>
+
+#include <maya/MObject.h>
+#include <maya/MGlobal.h>
+#include <maya/MPointArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MPoint.h>
+#include <maya/MString.h>
+#include <maya/MFnTransform.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
+
 
 namespace ember
 {
 	// ======== Configure =============
 	
-#define LEAF_POLYGON_COUNT (25)
+#define LEAF_POLYGON_COUNT (6)
 
-#define AABB_ADJUST (10)
+#define GLOBAL_BSP_NODE_COUNT (7)
+
+#define AABB_OFFSET "10000000000000"
+
+#define POSITION_CLOSE "1000000000000"
+
+#define POINT_AABB ivec3{BigInt("10000000000000"), BigInt("10000000000000"), BigInt("10000000000000")}
+
+#define BIG_NUM_STR "1000000000000000"
+
 
 	// ==================================
 
 
 	// ======== Basic Math =============
 
-	int multiply(Point x, Plane s);
+	BigInt multiply(Point x, Plane s);
 
-	int sign(int value);
+	int sign(BigInt value);
 
-	int determiant3x3(
-		int a, int b, int c,
-		int d, int e, int f,
-		int g, int h, int i);
+	BigInt determiant3x3(
+		BigInt a, BigInt b, BigInt c,
+		BigInt d, BigInt e, BigInt f,
+		BigInt g, BigInt h, BigInt i);
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
-	//bool collinear(ivec3 a, ivec3 b, ivec3 c);
+	bool isPositionEqual(ivec3 p1, ivec3 p2);
+
+	BigInt bigFloatToBigInt(BigFloat f);
 
 
 	// ======== Mesh Operation =============
@@ -61,6 +82,8 @@ namespace ember
 	/// </summary>
 	Segment getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis);
 
+	std::vector<int> TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV);
+
 	/// <summary>
 	/// Split the polygon with a plane and create two new polygons
 	/// - the bounds of new polygons are in order
@@ -80,10 +103,24 @@ namespace ember
 	///  - points on the end point of the segment are not considered valid
 	/// </summary>
 	Point intersectSegmentPolygon(Polygon* polygon, Segment segment);
-	
 
 	Point intersect(Plane p, Plane q, Plane r);
 
 	int classify(Point x, Plane s);
+
+	Polygon* fromPositionNormal(std::vector<ivec3>, ivec3, int);
+
+	void printStr(const char*);
+	void printVector(std::vector<int> vec);
+	void printNum(BigInt);
+	void printIvec3(ivec3);
+	void printPoint(Point);
+	void printPlane(Plane);
+	void printPolygon(Polygon*);
+	void drawPolygon(Polygon*);
+	void drawBoundingBox(AABB);
+	void drawPosition(ivec3);
+	void drawSegment(Segment s);
 }
+
 

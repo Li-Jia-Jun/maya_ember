@@ -1,14 +1,16 @@
 #pragma once
-
 #include <vector>
+#include <queue>
+#include "BigInt.hpp"
+#include "BigFloat.h"
 
 namespace ember
 {
 	struct ivec3
 	{
-		int x, y, z;
+		BigInt x, y, z;
 
-		int operator[](int i)
+		BigInt operator[](int i)
 		{
 			if (i == 0) return x;
 			else if (i == 1) return y;
@@ -43,13 +45,13 @@ namespace ember
 
 		static ivec3 cross(const ivec3& a, const ivec3& b)
 		{
-			int i = a.y * b.z - a.z * b.y;
-			int j = a.z * b.x - a.x * b.z;
-			int k = a.x * b.y - a.y * b.x;
+			BigInt i = a.y * b.z - a.z * b.y;
+			BigInt j = a.z * b.x - a.x * b.z;
+			BigInt k = a.x * b.y - a.y * b.x;
 			return ivec3{i, j, k};
 		}
 
-		static int dot(const ivec3& a, const ivec3& b)
+		static BigInt dot(const ivec3& a, const ivec3& b)
 		{
 			return a.x * b.x + a.y * b.y + a.z * b.z;
 		}
@@ -58,7 +60,15 @@ namespace ember
 	struct Point
 	{
 		// Homogenerous coordinate (obtained from intersect())
-		int x1, x2, x3, x4;
+		BigInt x1, x2, x3, x4;
+
+		Point(BigInt xx1, BigInt xx2, BigInt xx3, BigInt xx4)
+		{
+			x1 = xx1;
+			x2 = xx2;
+			x3 = xx3;
+			x4 = xx4;
+		}
 
 		bool isValid()
 		{
@@ -68,14 +78,38 @@ namespace ember
 		ivec3 getPosition()
 		{
 			// Cramer's rule
-			return ivec3{ int(-x1 / x4), int(-x2 / x4), int(-x3 / x4) };
+
+			return ivec3{ BigInt(x1 / x4), BigInt(x2 / x4), BigInt(x3 / x4) };
 		}
+	};
+	struct AABB
+	{
+		ivec3 min, max;
+	};
+	
+	struct RefPoint
+	{
+		ivec3 pos;
+		std::vector<int> WNV;
 	};
 
 	struct Plane
 	{
-		// ax + by + cz + d = 0
-		int a, b, c, d;
+		// ax + by + cz = d (This is the representation in Cramer's rule
+		BigInt a, b, c, d;
+
+		Plane(BigInt aa, BigInt bb, BigInt cc, BigInt dd)
+		{
+			a = aa;
+			b = bb;
+			c = cc; 
+			d = dd;
+		}
+
+		Plane()
+		{
+			// Default constructor
+		}
 
 		// Get non-normalized normal
 		ivec3 getNormal()
@@ -83,10 +117,16 @@ namespace ember
 			return { a, b, c };
 		}
 
+		Plane flip()
+		{
+			return Plane(-a, -b, -c, -d);
+		}
+
 		static Plane fromPositionNormal(ivec3 p, ivec3 nor)
 		{
-			return Plane {nor.x, nor.y, nor.z,
-				-(nor.x * p.x + nor.y * p.y + nor.z * p.z)};
+			// Cramer's rule
+			return Plane (nor.x, nor.y, nor.z,
+				(nor.x * p.x + nor.y * p.y + nor.z * p.z));
 		}
 
 		static Plane fromTriangle(ivec3 p1, ivec3 p2, ivec3 p3)
@@ -116,33 +156,5 @@ namespace ember
 		int meshId;
 		Plane support;
 		std::vector<Plane> bounds;
-
-		static Polygon* fromPositionNormal(std::vector<ivec3> posVec, ivec3 normal, int meshId)
-		{
-			// Compute support plane
-			ivec3 p0 = posVec[0];
-			Plane support = Plane::fromPositionNormal(p0, normal);
-
-			// Compute bound plane for each edge
-			// (assume that bound plane is perpendicular to support plane)
-			std::vector<Plane> bounds;
-			int count = posVec.size();
-			for (int i = 0; i < count; i++)
-			{
-				ivec3 p1 = posVec[i];
-				ivec3 p2 = posVec[(i + 1) % count];
-				ivec3 edgeDir = p2 - p1;
-
-				// If the vertex order follows the right hand rule
-				// the calculated bound plane normal will orient outside
-				ivec3 nor = ivec3::cross(support.getNormal(), edgeDir);	
-
-				bounds.push_back(Plane::fromPositionNormal(p1, nor));
-			}
-
-			return new Polygon{ meshId, support, bounds };
-		}
 	};
 }
-
-
