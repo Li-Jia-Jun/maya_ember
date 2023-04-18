@@ -21,9 +21,14 @@ namespace ember
 
 #define GLOBAL_BSP_NODE_COUNT (7)
 
-#define POINT_AABB ivec3{BigInt(1000), BigInt(1000), BigInt(1000)}
+#define AABB_OFFSET "10000000000000"
 
-#define BIG_NUM 100000
+#define POSITION_CLOSE "1000000000000"
+
+#define POINT_AABB ivec3{BigInt("10000000000000"), BigInt("10000000000000"), BigInt("10000000000000")}
+
+#define BIG_NUM_STR "1000000000000000"
+
 
 	// ==================================
 
@@ -41,7 +46,9 @@ namespace ember
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
-	//bool collinear(ivec3 a, ivec3 b, ivec3 c);
+	bool isPositionEqual(ivec3 p1, ivec3 p2);
+
+	BigInt bigFloatToBigInt(BigFloat f);
 
 
 	// ======== Mesh Operation =============
@@ -75,7 +82,7 @@ namespace ember
 	/// </summary>
 	Segment getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis);
 
-	std::vector<int> TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV);
+	std::vector<int> TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV);
 
 	/// <summary>
 	/// Split the polygon with a plane and create two new polygons
@@ -96,7 +103,6 @@ namespace ember
 	///  - points on the end point of the segment are not considered valid
 	/// </summary>
 	Point intersectSegmentPolygon(Polygon* polygon, Segment segment);
-	
 
 	Point intersect(Plane p, Plane q, Plane r);
 
@@ -114,6 +120,7 @@ namespace ember
 	void drawPolygon(Polygon*);
 	void drawBoundingBox(AABB);
 	void drawPosition(ivec3);
+	void drawSegment(Segment s);
 }
 
 

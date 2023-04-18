@@ -18,56 +18,54 @@ BSPTree::~BSPTree()
 
 void BSPTree::Build(BSPNode* rootNode)
 {
-	//nodes.clear();
-	//nodes.push_back(rootNode);
+	nodes.clear();
+	nodes.push_back(rootNode);
 
-	//// Create tree nodes recursively (in breadth first order)
-	//std::queue<BSPNode*> toTraverse;
-	//toTraverse.push(rootNode);
-	//int tempCount = 0;
-	//while (!toTraverse.empty())
-	//{	
-	//	BSPNode* node = toTraverse.front();
-	//	toTraverse.pop();
+	// Create tree nodes recursively (in breadth first order)
+	std::queue<BSPNode*> toTraverse;
+	toTraverse.push(rootNode);
+	int tempCount = 0;
+	while (!toTraverse.empty())
+	{	
+		BSPNode* node = toTraverse.front();
+		toTraverse.pop();
 
-	//	// Leaf node determination
-	//	if (node->polygons.size() <= LEAF_POLYGON_COUNT)
-	//		continue;
+		// Leaf node determination
+		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
+			continue;
 
-	//	// Split AABB
-	//	Split(node);
+		// Split AABB
+		Split(node);
 
-	//	// Collect new nodes
-	//	if (node->leftChild != nullptr)
-	//	{
-	//		toTraverse.push(node->leftChild);
-	//		nodes.push_back(node->leftChild);
-	//	}
-	//	if (node->rightChild != nullptr)
-	//	{
-	//		toTraverse.push(node->rightChild);
-	//		nodes.push_back(node->rightChild);
-	//	}
+		// Collect new nodes
+		if (node->leftChild != nullptr)
+		{
+			toTraverse.push(node->leftChild);
+			nodes.push_back(node->leftChild);
+		}
+		if (node->rightChild != nullptr)
+		{
+			toTraverse.push(node->rightChild);
+			nodes.push_back(node->rightChild);
+		}
+		if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
+		{
+			break;
+		}
+	}
+	printStr("Global BSP Construction Done");
 
-	//	if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
-	//	{
-	//		break;
-	//	}
-	//}
-
-	//printStr("Global BSP Construction Done");
-
-	//// Draw leaf nodes
-	//for (int i = 0; i < nodes.size(); i++)
-	//{
-	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
-	//	drawBoundingBox(nodes[i]->bound);
-	//	drawPosition(nodes[i]->refPoint.pos);
-	//	for (int j = 0; j < nodes[i]->polygons.size(); j++)
-	//	{
-	//		drawPolygon(nodes[i]->polygons[j]);
-	//	}
-	//}
+	// Draw leaf nodes
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
+		drawBoundingBox(nodes[i]->bound);
+		drawPosition(nodes[i]->refPoint.pos);
+		for (int j = 0; j < nodes[i]->polygons.size(); j++)
+		{
+			drawPolygon(nodes[i]->polygons[j]);
+		}
+	}
 	//printStr("WNV vectors for leaf nodes: ");
 	//for (int i = 0; i < nodes.size(); i++)
 	//{
@@ -86,15 +84,6 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	BuildLocalBSP(leaf);
 	//	FaceClassification(leaf);
 	//}
-
-	// 1. Use the first polygon in rootNode to build a local tree
-	LocalBSPTree* localTree = new LocalBSPTree(0, rootNode);
-
-	// 2. Intersect with the other polygon
-	std::vector<Segment> segments = localTree->IntersectWithPolygon(rootNode->polygons[1]);
-
-	// 3. Draw segments
-
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -136,26 +125,26 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 		//	{
 		//		if (i == k)
 		//			continue;
-
 		//		WNV = TraceSegment(candidates[k], segments[j], WNV);
 		//	}
 		//}
 		
 		std::vector<int> WNV = leaf->refPoint.WNV;
 
-			for (int k = 0; k < candidates.size(); k++)
-			{
-				if (i == k)
-					continue;
+		std::vector<Polygon*> toTest;
+		for (int k = 0; k < candidates.size(); k++)
+		{
+			if (i == k)
+				continue;
 
-				WNV = TraceSegment(candidates[k], segment, WNV);
-			}
+			toTest.push_back(candidates[i]);
+		}
+		WNV = TraceSegment(toTest, segment, WNV);
 
 		if (WNVBoolean(WNV))
 		{
 			outputPolygons.push_back(polygon);
 		}
-		//printPolygon(*polygon);
 	}
 }
 
@@ -340,11 +329,7 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 	Segment segment = getAxisSegmentFromPositions(node->refPoint.pos, refPoint.pos, axis);
 
 	// Trace refPoint through every polygon
-	std::vector<Polygon*> polygons = node->leftChild->polygons;
-	for (int i = 0; i < polygons.size(); i++)
-	{
-		refPoint.WNV = TraceSegment(polygons[i], segment, refPoint.WNV);
-	}
+	refPoint.WNV = TraceSegment(node->leftChild->polygons, segment, refPoint.WNV);
 
 	return refPoint;
 }

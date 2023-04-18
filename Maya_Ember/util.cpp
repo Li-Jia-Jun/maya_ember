@@ -5,8 +5,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
-#include "BigFloat.h"
-
 using namespace ember;
 
 
@@ -42,25 +40,21 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 	return crossProduct.x == 0 && crossProduct.y == 0 && crossProduct.z == 0;
 }
 
-//bool ember::collinear(ivec3 a, ivec3 b, ivec3 c)
-//{
-//	// Heron's formula
-//
-//	ivec3 ea = a - b;
-//	ivec3 eb = b - c;
-//	ivec3 ec = c - a;
-//
-//	float la = ea.length();
-//	float lb = eb.length();
-//	float lc = ec.length();
-//
-//	float s = (la + lb + lc) * 0.5f;
-//
-//	if ((abs(s - la) < 0.0001) || (abs(s - lb) < 0.0001) || (abs(s - lc) < 0.0001))
-//		return true;
-//	else
-//		return true;
-//}
+bool ember::isPositionEqual(ivec3 p1, ivec3 p2)
+{
+	return abs(p1.x - p2.x) + abs(p1.y - p1.y) + abs(p1.z - p2.z) < BigInt(POSITION_CLOSE);
+}
+
+BigInt ember::bigFloatToBigInt(BigFloat f)
+{
+	std::string f_str = f.ToString();
+	auto iter = std::find(f_str.begin(), f_str.end(), '.');
+	if (iter != f_str.end())
+	{
+		f_str.erase(iter, f_str.end());
+	}
+	return BigInt(f_str);
+}
 
 
 bool ember::isPlaneEqual(Plane p1, Plane p2)
@@ -96,17 +90,15 @@ bool ember::isPointInPolygon(Polygon* polygon, Point point)
 			break;
 		}
 	}
-	
-	//printStr("point inside polygon!");
-	//Point p = getPolygonPoint(polygon, 0);
-	//drawPosition(p.getPosition());
-	//for (int i = 0; i < polygon->bounds.size(); i++)
-	//{
-	//	int c = classify(p, polygon->bounds[i]);
-	//	printNum(c);
-	//}
-	//drawPosition(p.getPosition());
-	//drawPolygon(polygon);
+
+	if (outside)
+	{
+		printStr("point outside polygon!");
+	}
+	else
+	{
+		printStr("point inside polygon!");
+	}
 
 	if (outside) return false;
 	return true;
@@ -257,35 +249,63 @@ Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 	return segment;
 }
 
-std::vector<int> ember::TraceSegment(Polygon* polygon, Segment segment, std::vector<int> WNV)
+std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV)
 {
-	bool hasIntersect = intersectSegmentPolygon(polygon, segment).x4 != 0;
-	if (hasIntersect)
+	std::vector<Point> inPoints;	// Temp solution to avoid counting twice when intersceting mutual line
+	std::vector<Point> outPoints;	// of two polygons
+	for (int i = 0; i < polygons.size(); i++)
 	{
-		Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
-		Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
-		ivec3 dir = ed.getPosition() - st.getPosition();
+		Polygon* polygon = polygons[i];
+		Point x = intersectSegmentPolygon(polygon, segment);
+		if (x.isValid())
+		{
+			ivec3 xPos = x.getPosition();
+			Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
+			Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
+			ivec3 dir = ed.getPosition() - st.getPosition();
 
-		//printStr("trace segment intersect, st, ed = ");
-		//drawPolygon(polygon);
-		//drawPosition(st.getPosition());
-		//drawPosition(ed.getPosition());
-
-		BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
-		if (sign > 0)
-		{
-			// Segment is going out
-			WNV[polygon->meshId] = WNV[polygon->meshId] - 1;
-		}
-		else if (sign < 0)
-		{
-			// Segment is going in
-			WNV[polygon->meshId] = WNV[polygon->meshId] + 1;
-		}
-		else
-		{
-			// Segment lays on the polygon (impossible under our assumption?)
-			printStr("ERROR: trace segment lies on the polygon!!");
+			BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
+			if (sign > 0)
+			{
+				// Segment is going out
+				bool diffPoint = true;
+				for (int j = 0; j < outPoints.size(); j++)
+				{
+					if (isPositionEqual(outPoints[j].getPosition(), xPos))
+					{
+						diffPoint = false;
+						break;
+					}
+				}
+				if (diffPoint)
+				{
+					WNV[polygon->meshId] = WNV[polygon->meshId] - 1;
+					outPoints.push_back(x);
+				}
+			}
+			else if (sign < 0)
+			{
+				// Segment is going in
+				bool diffPoint = true;
+				for (int j = 0; j < inPoints.size(); j++)
+				{
+					if (isPositionEqual(inPoints[j].getPosition(), xPos))
+					{
+						diffPoint = false;
+						break;
+					}
+				}
+				if (diffPoint)
+				{
+					WNV[polygon->meshId] = WNV[polygon->meshId] + 1;
+					inPoints.push_back(x);
+				}
+			}
+			else
+			{
+				// Segment lays on the polygon (impossible under our assumption?)
+				printStr("ERROR: trace segment lies on the polygon!!");
+			}
 		}
 	}
 
@@ -414,6 +434,9 @@ Point ember::intersectLinePolygon(Polygon* polygon, Line line)
 {
 	Point x = intersect(polygon->support, line.p1, line.p2);
 
+	printStr("intersect line polygon:");
+	printPoint(x);
+
 	// If intersection is not unique
 	if (x.x4 == 0)
 	{
@@ -438,6 +461,8 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 	{
 		return x;
 	}
+
+	drawPosition(x.getPosition());
 
 	//printStr("line polygon intersect!");
 
@@ -595,10 +620,11 @@ void ember::drawPolygon(Polygon* p)
 		BigFloat x(vertPos.x.to_string());
 		BigFloat y(vertPos.y.to_string());
 		BigFloat z(vertPos.z.to_string());
+		BigFloat div(BIG_NUM_STR);
 		vertices.append(MPoint(
-			BigFloat::PrecDiv(x, BIG_NUM, 5).ToDouble(), 
-			BigFloat::PrecDiv(y, BIG_NUM, 5).ToDouble(), 
-			BigFloat::PrecDiv(z, BIG_NUM, 5).ToDouble()));
+			BigFloat::PrecDiv(x, div, 5).ToDouble(),
+			BigFloat::PrecDiv(y, div, 5).ToDouble(),
+			BigFloat::PrecDiv(z, div, 5).ToDouble()));
 		vertList.append(i);
 	}
 
@@ -632,12 +658,13 @@ void ember::drawBoundingBox(AABB boundingBox)
 	BigFloat fminX(boundingBox.min.x.to_string());
 	BigFloat fminY(boundingBox.min.y.to_string());
 	BigFloat fminZ(boundingBox.min.z.to_string());
-	double maxX = BigFloat::PrecDiv(fmaxX, BIG_NUM, 5).ToDouble();
-	double maxY = BigFloat::PrecDiv(fmaxY, BIG_NUM, 5).ToDouble(); 
-	double maxZ = BigFloat::PrecDiv(fmaxZ, BIG_NUM, 5).ToDouble();
-	double minX = BigFloat::PrecDiv(fminX, BIG_NUM, 5).ToDouble();
-	double minY = BigFloat::PrecDiv(fminY, BIG_NUM, 5).ToDouble();
-	double minZ = BigFloat::PrecDiv(fminZ, BIG_NUM, 5).ToDouble();
+	BigFloat div = BigFloat(BIG_NUM_STR);
+	double maxX = BigFloat::PrecDiv(fmaxX, div, 7).ToDouble();
+	double maxY = BigFloat::PrecDiv(fmaxY, div, 7).ToDouble();
+	double maxZ = BigFloat::PrecDiv(fmaxZ, div, 7).ToDouble();
+	double minX = BigFloat::PrecDiv(fminX, div, 7).ToDouble();
+	double minY = BigFloat::PrecDiv(fminY, div, 7).ToDouble();
+	double minZ = BigFloat::PrecDiv(fminZ, div, 7).ToDouble();
 
 	MPointArray vertices;
 	vertices.append(MPoint(minX, maxY, maxZ));
@@ -701,4 +728,27 @@ void ember::drawPosition(ivec3 pos)
 	refPointAABB.min = pos - POINT_AABB;
 	refPointAABB.max = pos + POINT_AABB;
 	drawBoundingBox(refPointAABB);
+}
+
+void ember::drawSegment(Segment s)
+{
+	// Compute the two points for the segment 
+	Point p1 = intersect(s.bound1, s.line.p1, s.line.p2);
+	Point p2 = intersect(s.bound2, s.line.p1, s.line.p2);
+	ivec3 p1p = p1.getPosition();
+	ivec3 p2p = p2.getPosition();
+	
+	BigFloat fx1(p1p.x.to_string());
+	BigFloat fy1(p1p.y.to_string());
+	BigFloat fz1(p1p.z.to_string());
+	BigFloat fx2(p2p.x.to_string());
+	BigFloat fy2(p2p.y.to_string());
+	BigFloat fz2(p2p.z.to_string());
+	BigFloat f(BIG_NUM_STR);
+	char buffer[128];
+	sprintf_s(buffer, 128, "curve -bezier -d 0 -p %f %f %f -p %f %f %f -k 0 -k 1", 
+		BigFloat::PrecDiv(fx1, f, 6).ToDouble(), BigFloat::PrecDiv(fy1, f, 6).ToDouble(), BigFloat::PrecDiv(fz1, f, 6).ToDouble(), 
+		BigFloat::PrecDiv(fx2, f, 6).ToDouble(), BigFloat::PrecDiv(fy2, f, 6).ToDouble(), BigFloat::PrecDiv(fz2, f, 6).ToDouble());
+	MGlobal::executeCommand(buffer, true);
+	MGlobal::displayInfo("buffer");
 }

@@ -38,6 +38,8 @@ MStatus helloMaya::doIt(const MArgList& argList)
 	// For finding the bound
 	float minX = 100000000, minY = 100000000, minZ = 100000000, maxX = -100000000, maxY = -100000000, maxZ = -100000000;
 
+	BigFloat bf(BIG_NUM_STR);
+
 	// Iterating through all the selected mesh objects
 	for (int i = 0; i < selectionList.length(); i++)
 	{
@@ -63,7 +65,10 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			// Get the normal and verts of the current face
 			polygonIt.getPoints(pointArray, MSpace::kWorld, &status);
 			polygonIt.getNormal(normal, MSpace::kWorld);
-			ember::ivec3 emberNormal{ normal.x * BIG_NUM, normal.y * BIG_NUM, normal.z * BIG_NUM };
+			BigInt x = ember::bigFloatToBigInt(normal.x * bf);
+			BigInt y = ember::bigFloatToBigInt(normal.y * bf);
+			BigInt z = ember::bigFloatToBigInt(normal.z * bf);
+			ember::ivec3 emberNormal{ x, y, z };
 			normals.push_back(emberNormal);
 
 			std::vector<ember::ivec3 > polyVerts;
@@ -97,10 +102,10 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				}
 
 				// Scale the vert pos to a big enough number
-				ember::ivec3 vert;
-				vert.x = point.x * BIG_NUM;
-				vert.y = point.y * BIG_NUM;
-				vert.z = point.z * BIG_NUM;
+				BigInt px = ember::bigFloatToBigInt(point.x * bf);
+				BigInt py = ember::bigFloatToBigInt(point.y * bf);
+				BigInt pz = ember::bigFloatToBigInt(point.z * bf);
+				ember::ivec3 vert{px, py, pz};
 				polyVerts.push_back(vert);
 			}
 			vertices.push_back(polyVerts);
@@ -112,12 +117,12 @@ MStatus helloMaya::doIt(const MArgList& argList)
 
 		ember::AABB bound;
 		int offset = 1000;
-		bound.max.x = maxX * BIG_NUM + offset;
-		bound.max.y = maxY * BIG_NUM + offset;
-		bound.max.z = maxZ * BIG_NUM + offset;
-		bound.min.x = minX * BIG_NUM - offset;
-		bound.min.y = minY * BIG_NUM - offset;
-		bound.min.z = minZ * BIG_NUM - offset;
+		bound.max.x = ember::bigFloatToBigInt(BigFloat(maxX) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.max.y = ember::bigFloatToBigInt(BigFloat(maxY) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.max.z = ember::bigFloatToBigInt(BigFloat(maxZ) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.x = ember::bigFloatToBigInt(BigFloat(minX) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.y = ember::bigFloatToBigInt(BigFloat(minY) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.z = ember::bigFloatToBigInt(BigFloat(minZ) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
 		ember.SetInitBound(bound);
 
 		// The algorithm starts here

@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include "BigInt.hpp"
+#include "BigFloat.h"
 
 namespace ember
 {
