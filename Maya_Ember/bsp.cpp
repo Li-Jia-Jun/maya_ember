@@ -86,11 +86,20 @@ void BSPTree::Build(BSPNode* rootNode)
 	//}
 
 	// Intersection test
-	LocalBSPTree* localTree = new LocalBSPTree(0, rootNode);
-	std::vector<Segment> segs = localTree->IntersectWithPolygon(rootNode->polygons[1]);
-	for (int i = 0; i < segs.size(); i++) {
-		drawSegment(segs[i]);
+	//LocalBSPTree* localTree = new LocalBSPTree(0, rootNode);
+	//std::vector<Segment> segs = localTree->IntersectWithPolygon(rootNode->polygons[1]);
+	//for (int i = 0; i < segs.size(); i++) {
+	//	drawSegment(segs[i]);
+	//}
+
+
+
+	BuildLocalBSP(rootNode);
+	for (int i = 0; i < rootNode->localTrees.size(); i++)
+	{
+		rootNode->localTrees[i]->drawlocalBSPTree();
 	}
+
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -122,7 +131,7 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 		// LEO::To be updated with the new segment method
 		// Find path from x to ref point
 		//std::vector<Segment> segments = FindPathBackToRefPoint(leaf->refPoint, x);
-		Segment segment = FindPathBackToRefPoint(leaf->refPoint, x);
+		Segment segment = FindPathBackToRefPoint2(leaf->refPoint, x);
 		
 		// Update WNV
 		//std::vector<int> WNV = leaf->refPoint.WNV;
@@ -144,7 +153,7 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 			if (i == k)
 				continue;
 
-			toTest.push_back(candidates[i]);
+			toTest.push_back(candidates[k]);
 		}
 		WNV = TraceSegment(toTest, segment, WNV);
 
@@ -448,6 +457,44 @@ Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
 	return getSegmentfromPlanes(p1, p2, refPlanes[2], xPlanes[2]);
 }
 
+Segment BSPTree::FindPathBackToRefPoint2(RefPoint ref, Point x)
+{
+	// Build a segment from ref and x directly
+
+	ivec3 lineDir = x.getPosition() - ref.pos;
+	Line line;
+
+	// If segment is aligned with any axis
+	if (abs(lineDir.x) > 100 && abs(lineDir.y) < 100 && abs(lineDir.z) < 100)
+	{
+		line.p1 = Plane::fromPositionNormal(ref.pos, ivec3{ 0, 1, 0 });
+		line.p2 = Plane::fromPositionNormal(ref.pos, ivec3{ 0, 0, 1 });
+	}
+	else if (abs(lineDir.y) > 100 && abs(lineDir.z) < 100 && abs(lineDir.x) < 100)
+	{
+		line.p1 = Plane::fromPositionNormal(ref.pos, ivec3{ 1, 0, 0 });
+		line.p2 = Plane::fromPositionNormal(ref.pos, ivec3{ 0, 0, 1 });
+	}
+	else if (abs(lineDir.z) > 100 && abs(lineDir.x) < 100 && abs(lineDir.y) < 100)
+	{
+		line.p1 = Plane::fromPositionNormal(ref.pos, ivec3{ 1, 0, 0 });
+		line.p2 = Plane::fromPositionNormal(ref.pos, ivec3{ 0, 1, 0 });
+	}
+	else
+	{
+		// Line is not aligned with any axis
+		ivec3 dir1 = ivec3::cross(lineDir, ivec3{ 1, 0, 0 });
+		ivec3 dir2 = ivec3::cross(lineDir, ivec3{ 0, 1, 0 });
+		line.p1 = Plane::fromPositionNormal(ref.pos, dir1);
+		line.p2 = Plane::fromPositionNormal(ref.pos, dir2);
+	}
+
+	Plane b1 = Plane::fromPositionNormal(ref.pos, ivec3{ -lineDir.x, -lineDir.y, -lineDir.z });
+	Plane b2 = Plane::fromPositionNormal(x.getPosition(), lineDir);
+
+	return Segment{ line, b1 ,b2 };
+}
+
 bool BSPTree::WNVBoolean(std::vector<int> WNV)
 {
 	// Temporary method to map WNV (assumes we only have 2 meshes for now)
@@ -465,7 +512,7 @@ LocalBSPTree::LocalBSPTree(int index, BSPNode* leaf)
 {
 	LocalBSPNode* root = new LocalBSPNode();
 	root->polygon = leaf->polygons[index];
-	//printPolygon(*(root->polygon));
+	//drawPolygon(root->polygon);
 	nodes.push_back(root);
 	mark = index; // The mark is its index in the leaf BSP node
 }
@@ -477,17 +524,29 @@ LocalBSPTree::~LocalBSPTree()
 void LocalBSPTree::Build(BSPNode* leaf)
 {
 	// Add segment by intersecting with all other polygons in the same leaf node
+	//printStr("Leaf polygon size");
+	//printNum(leaf->polygons.size());
 	for (int i = 0; i < leaf->polygons.size(); i++)
 	{
 		if (i == mark)
 		{
+			//printNum(i);
 			continue;
 		}
 
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
+		printStr("segments size");
+		printNum(segments.size());
+
+		if (segments.size() > 1) // Two polygons overlap
+		{
+			if (i > mark)
+				continue;
+		}
 
 		for (int j = 0; j < segments.size(); j++)
 		{
+			drawSegment(segments[j]);
 			Point v0 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound1);
 			Point v1 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound2);
 			Plane s = leaf->polygons[i]->support;
@@ -495,6 +554,7 @@ void LocalBSPTree::Build(BSPNode* leaf)
 			AddSegment(nodes[0], v0, v1, s, i);
 		}
 	}
+	
 }
 
 void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark)
@@ -504,31 +564,39 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, i
 		return;
 	}
 
-	Polygon* polygon = nodes[0]->polygon;
-
 	bool isLeaf = node->leftChild == nullptr && node->rightChild == nullptr;
+
 	if(isLeaf)
 	{
-		auto pairs = splitPolygon(polygon, s);
+		auto pairs = splitPolygon(node->polygon, s);
 		node->plane = s; // Current node becomes inner
-		
-		LocalBSPNode* leftNode = new LocalBSPNode();
-		LocalBSPNode* rightNode = new LocalBSPNode();
-		leftNode->polygon = pairs.first;
-		rightNode->polygon = pairs.second;
+
+		LocalBSPNode* leftNode = nullptr;
+		LocalBSPNode* rightNode = nullptr;
+
+		if (pairs.first != nullptr)
+		{
+			leftNode = new LocalBSPNode();
+			leftNode->polygon = pairs.first;
+		}
+		if (pairs.second != nullptr)
+		{
+			rightNode = new LocalBSPNode();
+			rightNode->polygon = pairs.second;
+		}
 
 		// Mark the node as not used in final output
-		if (node->disable || otherMark < mark)
-		{
-			leftNode->disable = true;
-			leftNode->disable = true;
-		}
+		//if (node->disable || otherMark < mark)
+		//{
+		//	if(leftNode != nullptr) leftNode->disable = true;
+		//	if(rightNode != nullptr) rightNode->disable = true;
+		//}
 
 		node->leftChild = leftNode;
 		node->rightChild = rightNode;
 
-		nodes.push_back(leftNode);
-		nodes.push_back(rightNode);
+		if (leftNode != nullptr) nodes.push_back(leftNode);
+		if (rightNode != nullptr) nodes.push_back(rightNode);
 	}
 	else
 	{
@@ -549,13 +617,13 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, i
 		}
 		else if (c0 < 0 && c1 > 0)
 		{
-			Point v = intersect(s, node->plane, polygon->support);
+			Point v = intersect(s, node->plane, node->polygon->support);
 			AddSegment(node->leftChild, v0, v, s, otherMark);
 			AddSegment(node->rightChild, v, v1, s, otherMark);
 		}
 		else if (c0 > 0 && c1 < 0)
 		{
-			Point v = intersect(s, node->plane, polygon->support);
+			Point v = intersect(s, node->plane, node->polygon->support);
 			AddSegment(node->leftChild, v, v1, s, otherMark);
 			AddSegment(node->rightChild, v0, v, s, otherMark);
 		}
@@ -671,5 +739,20 @@ void LocalBSPTree::CollectPolygons(std::vector<Polygon*>& container)
 			continue;
 
 		container.push_back(node->polygon);
+	}
+}
+
+void LocalBSPTree::drawlocalBSPTree()
+{
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		if (nodes[i]->leftChild == nullptr && nodes[i]->rightChild == nullptr)
+		{
+			//printStr("A LEAF NODE!");
+			//if (!nodes[i]->disable)
+			{
+				drawPolygon(nodes[i]->polygon);
+			}
+		}
 	}
 }

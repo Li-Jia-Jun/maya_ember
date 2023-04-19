@@ -116,6 +116,7 @@ namespace ember
 	void printIvec3(ivec3);
 	void printPoint(Point);
 	void printPlane(Plane);
+	void printSegment(ember::Segment);
 	void printPolygon(Polygon*);
 	void drawPolygon(Polygon*);
 	void drawBoundingBox(AABB);

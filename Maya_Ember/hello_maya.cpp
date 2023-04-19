@@ -120,9 +120,9 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		bound.max.x = ember::bigFloatToBigInt(BigFloat(maxX) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
 		bound.max.y = ember::bigFloatToBigInt(BigFloat(maxY) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
 		bound.max.z = ember::bigFloatToBigInt(BigFloat(maxZ) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-		bound.min.x = ember::bigFloatToBigInt(BigFloat(minX) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-		bound.min.y = ember::bigFloatToBigInt(BigFloat(minY) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-		bound.min.z = ember::bigFloatToBigInt(BigFloat(minZ) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
+		bound.min.x = ember::bigFloatToBigInt(BigFloat(minX) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
+		bound.min.y = ember::bigFloatToBigInt(BigFloat(minY) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
+		bound.min.z = ember::bigFloatToBigInt(BigFloat(minZ) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
 		ember.SetInitBound(bound);
 
 		// The algorithm starts here

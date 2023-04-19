@@ -34,6 +34,7 @@ namespace ember
 		// LEO::to be updated with the new segment method
 		//std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
 		Segment FindPathBackToRefPoint(RefPoint ref, Point x);
+		Segment FindPathBackToRefPoint2(RefPoint ref, Point x);
 
 		bool WNVBoolean(std::vector<int> WNV);
 		
@@ -63,6 +64,7 @@ namespace ember
 		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);	
 		void CollectPolygons(std::vector<Polygon*>& container);
 		std::vector<Segment> IntersectWithPolygon(Polygon* p2);
+		void drawlocalBSPTree();
 
 	private:
 		std::vector<LocalBSPNode*> nodes;		// Element 0 is root node

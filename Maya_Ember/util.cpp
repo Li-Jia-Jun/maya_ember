@@ -584,6 +584,20 @@ void ember::printPlane(ember::Plane p)
 	MGlobal::displayInfo(buffer);
 }
 
+void ember::printSegment(ember::Segment s)
+{
+	char buffer[1024];
+	sprintf_s(buffer, "line: ");
+	MGlobal::displayInfo(buffer);
+	ember::printPlane(s.line.p1);
+	ember::printPlane(s.line.p2);
+
+	sprintf_s(buffer, "bounds: ");
+	MGlobal::displayInfo(buffer);
+	ember::printPlane(s.bound1);
+	ember::printPlane(s.bound2);
+}
+
 void ember::printPolygon(ember::Polygon* p)
 {
 	char buffer[1024];
@@ -601,6 +615,11 @@ void ember::printPolygon(ember::Polygon* p)
 
 void ember::drawPolygon(Polygon* p)
 {
+	if (p == nullptr)
+	{
+		printStr("FATAL: DRAWING AN EMPTY POLYGON");
+		return;
+	}
 	int numVerts = p->bounds.size();
 
 	MPointArray vertices;
@@ -747,10 +766,10 @@ void ember::drawSegment(Segment s)
 	BigFloat fy2(p2p.y.to_string());
 	BigFloat fz2(p2p.z.to_string());
 	BigFloat f(BIG_NUM_STR);
-	char buffer[128];
-	sprintf_s(buffer, 128, "curve -bezier -d 0 -p %f %f %f -p %f %f %f -k 0 -k 1", 
+	char buffer[1024];
+	sprintf_s(buffer, 1024, "curve -bezier -d 1 -p %f %f %f -p %f %f %f -k 0 -k 1", 
 		BigFloat::PrecDiv(fx1, f, 6).ToDouble(), BigFloat::PrecDiv(fy1, f, 6).ToDouble(), BigFloat::PrecDiv(fz1, f, 6).ToDouble(), 
 		BigFloat::PrecDiv(fx2, f, 6).ToDouble(), BigFloat::PrecDiv(fy2, f, 6).ToDouble(), BigFloat::PrecDiv(fz2, f, 6).ToDouble());
 	MGlobal::executeCommand(buffer, true);
-	MGlobal::displayInfo("buffer");
+	//MGlobal::displayInfo("buffer");
 }
