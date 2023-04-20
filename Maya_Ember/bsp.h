@@ -36,7 +36,7 @@ namespace ember
 		Segment FindPathBackToRefPoint(RefPoint ref, Point x);
 		Segment FindPathBackToRefPoint2(RefPoint ref, Point x);
 
-		bool WNVBoolean(std::vector<int> WNV);
+		void WNVBoolean(Polygon* polygon, std::vector<int> WNV);
 		
 	private:
 		std::vector<BSPNode*> nodes;				// Element 0 is root node
@@ -61,7 +61,8 @@ namespace ember
 		LocalBSPTree(int index, BSPNode* leaf);
 		~LocalBSPTree();
 		void Build(BSPNode* leaf);
-		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);	
+		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);
+		//void AddSegment(LocalBSPNode* node, Segment segment, Plane s, int otherMark);
 		void CollectPolygons(std::vector<Polygon*>& container);
 		std::vector<Segment> IntersectWithPolygon(Polygon* p2);
 		void drawlocalBSPTree();

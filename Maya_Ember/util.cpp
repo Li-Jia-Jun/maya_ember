@@ -42,7 +42,7 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 
 bool ember::isPositionEqual(ivec3 p1, ivec3 p2)
 {
-	return abs(p1.x - p2.x) + abs(p1.y - p1.y) + abs(p1.z - p2.z) < BigInt(POSITION_CLOSE);
+	return abs(p1.x - p2.x) + abs(p1.y - p2.y) + abs(p1.z - p2.z) < BigInt(POSITION_CLOSE);
 }
 
 BigInt ember::bigFloatToBigInt(BigFloat f)
@@ -455,6 +455,14 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 			bool b2 = isPointInPolygon(polygon, p2);
 			if (!b1 && !b2)
 			{
+				// Check if the segment has intersection with the polygon
+				for (int i = 0; i < polygon->bounds.size(); i++)
+				{
+					Point tmp = intersect(segment.line.p1, segment.line.p2, polygon->bounds[i]);
+					if (tmp.isValid())
+						return tmp;
+				}
+
 				return x;
 			}
 			else

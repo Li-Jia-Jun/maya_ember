@@ -93,13 +93,20 @@ void BSPTree::Build(BSPNode* rootNode)
 	//}
 
 
-
+	printStr("build bsp start");
 	BuildLocalBSP(rootNode);
-	for (int i = 0; i < rootNode->localTrees.size(); i++)
+	printStr("build bsp done");
+	//for (int i = 0; i < rootNode->localTrees.size(); i++)
+	//{
+	//	rootNode->localTrees[i]->drawlocalBSPTree();
+	//}
+	printStr("face classification start");
+	FaceClassification(rootNode);
+	printStr("face classification done");
+	for (int i = 0; i < outputPolygons.size(); i++)
 	{
-		rootNode->localTrees[i]->drawlocalBSPTree();
+		drawPolygon(outputPolygons[i]);
 	}
-
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -116,8 +123,6 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 	for (int i = 0; i < candidates.size(); i++)
 	{
 		Polygon* polygon = candidates[i];
-		
-		//printPolygon(*polygon);
 
 		// 2. Pick a point inside polygon
 		Point x = FindPolygonInteriorSimple(polygon);
@@ -126,41 +131,19 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 			x = FindPolygonInteriorComplex(polygon);
 		}
 
-		//printPoint(x);
-
-		// LEO::To be updated with the new segment method
-		// Find path from x to ref point
-		//std::vector<Segment> segments = FindPathBackToRefPoint(leaf->refPoint, x);
 		Segment segment = FindPathBackToRefPoint2(leaf->refPoint, x);
-		
-		// Update WNV
-		//std::vector<int> WNV = leaf->refPoint.WNV;
-		//for (int j = 0; j < segments.size(); j++)
-		//{
-		//	for (int k = 0; k < candidates.size(); k++)
-		//	{
-		//		if (i == k)
-		//			continue;
-		//		WNV = TraceSegment(candidates[k], segments[j], WNV);
-		//	}
-		//}
-		
+
 		std::vector<int> WNV = leaf->refPoint.WNV;
 
 		std::vector<Polygon*> toTest;
 		for (int k = 0; k < candidates.size(); k++)
 		{
-			if (i == k)
-				continue;
-
+			if (i == k) continue;
 			toTest.push_back(candidates[k]);
 		}
 		WNV = TraceSegment(toTest, segment, WNV);
-
-		if (WNVBoolean(WNV))
-		{
-			outputPolygons.push_back(polygon);
-		}
+		WNVBoolean(polygon, WNV);
+		printStr("one candidate done");
 	}
 }
 
@@ -168,16 +151,10 @@ Point BSPTree::FindPolygonInteriorSimple(Polygon* polygon)
 {
 	// Find polygon interior x by COM and axis line intersection
 	// This is relatively computaional friendly
-
 	ivec3 c = getRoundedPolygonCOM(polygon);
 
 	// Pick the cloest axis that aligns with polygon normal
 	int axis = getCloestAxis(polygon->support.getNormal());
-
-	//char buffer[128];
-	//sprintf_s(buffer, "Find inside point simple, com and axis: %i %i %i %i", c.x, c.y, c.z, axis);
-	//MString debug(buffer);
-	//MGlobal::displayInfo(buffer);
 
 	// Line polygon intersection
 	Line line = getAxisLine(c, axis);
@@ -224,6 +201,7 @@ void BSPTree::BuildLocalBSP(BSPNode* leaf)
 		LocalBSPTree* localTree = new LocalBSPTree(j, leaf);
 		localTree->Build(leaf);
 		leaf->localTrees.push_back(localTree);
+		printStr("one local bsp done");
 	}
 }
 
@@ -495,15 +473,31 @@ Segment BSPTree::FindPathBackToRefPoint2(RefPoint ref, Point x)
 	return Segment{ line, b1 ,b2 };
 }
 
-bool BSPTree::WNVBoolean(std::vector<int> WNV)
+void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
 {
 	// Temporary method to map WNV (assumes we only have 2 meshes for now)
-	if (WNV[0] != 0 && WNV[1] == 0)
+	
+	if (polygon->meshId == 0)
 	{
-		return true;
+		if (WNV[1] == 0)
+		{
+			outputPolygons.push_back(polygon);
+		}
 	}
-
-	return false;
+	else
+	{
+		if (WNV[0] > 0)
+		{
+			Polygon* flipPolygon = new Polygon();
+			flipPolygon->meshId = polygon->meshId;
+			flipPolygon->support = polygon->support.flip();
+			for (int i = polygon->bounds.size() - 1; i >= 0; i--)
+			{
+				flipPolygon->bounds.push_back(polygon->bounds[i]);
+			}
+			outputPolygons.push_back(flipPolygon);
+		}
+	}
 }
 
 // ========== Local BSP ============
@@ -524,32 +518,23 @@ LocalBSPTree::~LocalBSPTree()
 void LocalBSPTree::Build(BSPNode* leaf)
 {
 	// Add segment by intersecting with all other polygons in the same leaf node
-	//printStr("Leaf polygon size");
-	//printNum(leaf->polygons.size());
 	for (int i = 0; i < leaf->polygons.size(); i++)
 	{
 		if (i == mark)
 		{
-			//printNum(i);
 			continue;
 		}
 
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
-		printStr("segments size");
-		printNum(segments.size());
-
-		if (segments.size() > 1) // Two polygons overlap
-		{
-			if (i > mark)
-				continue;
-		}
-
 		for (int j = 0; j < segments.size(); j++)
 		{
-			drawSegment(segments[j]);
 			Point v0 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound1);
 			Point v1 = intersect(segments[j].line.p1, segments[j].line.p2, segments[j].bound2);
-			Plane s = leaf->polygons[i]->support;
+			Plane s = segments[j].line.p1;
+			if (isDirectionEqual(s.getNormal(), nodes[0]->polygon->support.getNormal()))
+			{
+				s = segments[j].line.p2;
+			}
 
 			AddSegment(nodes[0], v0, v1, s, i);
 		}
@@ -568,6 +553,11 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, i
 
 	if(isLeaf)
 	{
+		//if (isDirectionEqual(s.getNormal(), node->polygon->support.getNormal()))
+		//{
+
+		//}
+
 		auto pairs = splitPolygon(node->polygon, s);
 		node->plane = s; // Current node becomes inner
 
@@ -687,15 +677,12 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 			}
 		}
 	}
-
 	
 	ivec3 nor1 = p1->support.getNormal();
 	ivec3 nor2 = p2->support.getNormal();
 	bool planeParallel = isDirectionEqual(nor1, nor2);
 	if (planeParallel)
 	{
-		printStr("plane is parallel, point size = ");
-		printNum(points.size());
 		if (points.size() >= 2)
 		{
 			// C4: intersection forms a polygon (collect all p2's edges)
@@ -725,6 +712,7 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 			// C1 or C2: no intersection or degenerate segment (ignore)
 		}
 	}
+
 
 	return segments;
 }
