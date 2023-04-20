@@ -64,6 +64,13 @@ namespace ember
 
 		Point(BigInt xx1, BigInt xx2, BigInt xx3, BigInt xx4)
 		{
+			//if (xx1 % 100 == 0 && xx2 % 100 == 0 && xx3 % 100 == 0 && xx4 % 100 == 0)
+			//{
+			//	xx1 = xx1 / 100;
+			//	xx2 = xx2 / 100;
+			//	xx3 = xx3 / 100;
+			//	xx4 = xx4 / 100;
+			//}
 			x1 = xx1;
 			x2 = xx2;
 			x3 = xx3;
@@ -78,7 +85,6 @@ namespace ember
 		ivec3 getPosition()
 		{
 			// Cramer's rule
-
 			return ivec3{ BigInt(x1 / x4), BigInt(x2 / x4), BigInt(x3 / x4) };
 		}
 	};
@@ -100,6 +106,13 @@ namespace ember
 
 		Plane(BigInt aa, BigInt bb, BigInt cc, BigInt dd)
 		{
+			//if (aa % 100 == 0 && bb % 100 == 0 && cc % 100 == 0 && dd % 100 == 0)
+			//{
+			//	aa = aa / 100;
+			//	bb = bb / 100;
+			//	cc = cc / 100;
+			//	dd = dd / 100;
+			//}
 			a = aa;
 			b = bb;
 			c = cc; 
@@ -127,6 +140,12 @@ namespace ember
 			// Cramer's rule
 			return Plane (nor.x, nor.y, nor.z,
 				(nor.x * p.x + nor.y * p.y + nor.z * p.z));
+		}
+
+		static Plane fromPointNormal(Point p, ivec3 nor)
+		{
+			return Plane(nor.x, nor.y, nor.z,
+				(nor.x * p.x1 + nor.y * p.x2, nor.z * p.x3));
 		}
 
 		static Plane fromTriangle(ivec3 p1, ivec3 p2, ivec3 p3)

@@ -23,7 +23,7 @@ namespace ember
 
 #define AABB_OFFSET "10000000000000"
 
-#define POSITION_CLOSE "1000000000000"
+#define POSITION_CLOSE "100000"
 
 #define POINT_AABB ivec3{BigInt("10000000000000"), BigInt("10000000000000"), BigInt("10000000000000")}
 
@@ -46,7 +46,9 @@ namespace ember
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
-	bool isPositionEqual(ivec3 p1, ivec3 p2);
+	//bool isPositionEqual(ivec3 p1, ivec3 p2);
+
+	bool isPointEqual(Point p1, Point p2);
 
 	BigInt bigFloatToBigInt(BigFloat f);
 

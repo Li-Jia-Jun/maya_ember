@@ -31,9 +31,8 @@ namespace ember
 		Point FindPolygonInteriorSimple(Polygon* polygon);
 		Point FindPolygonInteriorComplex(Polygon* polygon);
 		RefPoint TraceRefPoint(BSPNode* node, int axis);
-		// LEO::to be updated with the new segment method
 		//std::vector<Segment> FindPathBackToRefPoint(RefPoint ref, Point x);
-		Segment FindPathBackToRefPoint(RefPoint ref, Point x);
+		//Segment FindPathBackToRefPoint(RefPoint ref, Point x);
 		Segment FindPathBackToRefPoint2(RefPoint ref, Point x);
 
 		void WNVBoolean(Polygon* polygon, std::vector<int> WNV);

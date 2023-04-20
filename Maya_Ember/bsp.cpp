@@ -384,62 +384,60 @@ RefPoint BSPTree::TraceRefPoint(BSPNode* node, int axis)
 //	}
 //	return segments;
 //}
-
-
-Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
-{
-	// 3. Trace x back to ref point
-	//	by constructing 1 or 2 points in between
-	// (no point in between is impossible because a part of polygon would have been outside AABB)
-	ivec3 xPos = x.getPosition();
-	ivec3 refPos = ref.pos;
-
-	std::vector<Plane> xPlanes;
-	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 1, 0, 0 }));
-	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 1, 0 }));
-	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 0, 1 }));
-
-	std::vector<Plane> refPlanes;
-	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 1, 0, 0 }));
-	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 1, 0 }));
-	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 0, 1 }));
-
-
-	ivec3 dir = xPos - refPos;
-	// should normalize the normal
-	//float length = sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-
-
-	// A point on the line 
-	ivec3 p = xPos;
-
-	// normal vector for the first plane that is not parallel to the line
-	ivec3 n1{ 1, 0, 0 };
-	// should check if they are parallel here
-
-	BigInt d1 = ivec3::dot(n1, p);
-
-	// first plane 
-	Plane p1( n1.x, n1.y, n1.z, d1 );
-
-	// normal for the second plane that is not parallel to the line
-	ivec3 n2{ 0, 1, 0 };
-
-	BigInt d2 = ivec3::dot(n2, p);
-
-	// second plane
-	Plane p2( n2.x, n2.y, n2.z, d2 );
-
-
-	//return getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]);
-	return getSegmentfromPlanes(p1, p2, refPlanes[2], xPlanes[2]);
-}
+//Segment BSPTree::FindPathBackToRefPoint(RefPoint ref, Point x)
+//{
+//	// 3. Trace x back to ref point
+//	//	by constructing 1 or 2 points in between
+//	// (no point in between is impossible because a part of polygon would have been outside AABB)
+//	ivec3 xPos = x.getPosition();
+//	ivec3 refPos = ref.pos;
+//
+//	std::vector<Plane> xPlanes;
+//	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 1, 0, 0 }));
+//	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 1, 0 }));
+//	xPlanes.push_back(Plane::fromPositionNormal(xPos, { 0, 0, 1 }));
+//
+//	std::vector<Plane> refPlanes;
+//	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 1, 0, 0 }));
+//	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 1, 0 }));
+//	refPlanes.push_back(Plane::fromPositionNormal(ref.pos, { 0, 0, 1 }));
+//
+//
+//	ivec3 dir = xPos - refPos;
+//	// should normalize the normal
+//	//float length = sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+//
+//
+//	// A point on the line 
+//	ivec3 p = xPos;
+//
+//	// normal vector for the first plane that is not parallel to the line
+//	ivec3 n1{ 1, 0, 0 };
+//	// should check if they are parallel here
+//
+//	BigInt d1 = ivec3::dot(n1, p);
+//
+//	// first plane 
+//	Plane p1( n1.x, n1.y, n1.z, d1 );
+//
+//	// normal for the second plane that is not parallel to the line
+//	ivec3 n2{ 0, 1, 0 };
+//
+//	BigInt d2 = ivec3::dot(n2, p);
+//
+//	// second plane
+//	Plane p2( n2.x, n2.y, n2.z, d2 );
+//
+//
+//	//return getSegmentfromPlanes(p0, p1, p2, refPlanes[pick0]);
+//	return getSegmentfromPlanes(p1, p2, refPlanes[2], xPlanes[2]);
+//}
 
 Segment BSPTree::FindPathBackToRefPoint2(RefPoint ref, Point x)
 {
 	// Build a segment from ref and x directly
-
-	ivec3 lineDir = x.getPosition() - ref.pos;
+	ivec3 xPos = x.getPosition();
+	ivec3 lineDir = xPos - ref.pos;
 	Line line;
 
 	// If segment is aligned with any axis
@@ -468,7 +466,7 @@ Segment BSPTree::FindPathBackToRefPoint2(RefPoint ref, Point x)
 	}
 
 	Plane b1 = Plane::fromPositionNormal(ref.pos, ivec3{ -lineDir.x, -lineDir.y, -lineDir.z });
-	Plane b2 = Plane::fromPositionNormal(x.getPosition(), lineDir);
+	Plane b2 = Plane::fromPositionNormal(xPos, lineDir);
 
 	return Segment{ line, b1 ,b2 };
 }
@@ -641,13 +639,18 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 		}
 		else
 		{
-			ivec3 pos1 = points[0].getPosition();
-			ivec3 pos2 = point.getPosition();
-			if (!isPositionEqual(pos1, pos2))
+			//ivec3 pos1 = points[0].getPosition();
+			//ivec3 pos2 = point.getPosition();
+			//if (!isPositionEqual(pos1, pos2))
+			//{
+			//	points.push_back(point);
+			//	break;  // 2 intersect points are sufficient to distinguish 
+			//			// between intersecting on a point or an overlapping area
+			//}
+			if (!isPointEqual(points[0], point))
 			{
 				points.push_back(point);
-				break;  // 2 intersect points are sufficient to distinguish 
-						// between intersecting on a point or an overlapping area
+				break;
 			}
 		}
 	}
@@ -666,13 +669,18 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 			}
 			else
 			{
-				ivec3 pos1 = points[0].getPosition();
-				ivec3 pos2 = point.getPosition();
-				if (!isPositionEqual(pos1, pos2))
+				//ivec3 pos1 = points[0].getPosition();
+				//ivec3 pos2 = point.getPosition();
+				//if (!isPositionEqual(pos1, pos2))
+				//{
+				//	points.push_back(point);
+				//	break;  // 2 intersect points are sufficient to distinguish 
+				//			// between intersecting on a point or an overlapping area
+				//}
+				if (!isPointEqual(points[0], point))
 				{
 					points.push_back(point);
-					break;  // 2 intersect points are sufficient to distinguish 
-							// between intersecting on a point or an overlapping area
+					break;
 				}
 			}
 		}

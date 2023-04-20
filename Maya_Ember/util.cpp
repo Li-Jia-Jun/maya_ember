@@ -40,9 +40,18 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 	return crossProduct.x == 0 && crossProduct.y == 0 && crossProduct.z == 0;
 }
 
-bool ember::isPositionEqual(ivec3 p1, ivec3 p2)
+//bool ember::isPositionEqual(ivec3 p1, ivec3 p2)
+//{
+//	return abs(p1.x - p2.x) + abs(p1.y - p2.y) + abs(p1.z - p2.z) < BigInt(POSITION_CLOSE);
+//}
+
+bool ember::isPointEqual(Point p1, Point p2)
 {
-	return abs(p1.x - p2.x) + abs(p1.y - p2.y) + abs(p1.z - p2.z) < BigInt(POSITION_CLOSE);
+	BigInt close(POSITION_CLOSE);
+	bool b1 = abs(p1.x1 * p2.x4 - p2.x1 * p1.x4) < close;
+	bool b2 = abs(p1.x2 * p2.x4 - p2.x2 * p1.x4) < close;
+	bool b3 = abs(p1.x3 * p2.x4 - p2.x3 * p1.x4) < close;
+	return b1 && b2 && b3;
 }
 
 BigInt ember::bigFloatToBigInt(BigFloat f)
@@ -250,7 +259,6 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 		Point x = intersectSegmentPolygon(polygon, segment);
 		if (x.isValid())
 		{
-			ivec3 xPos = x.getPosition();
 			Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
 			Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
 			ivec3 dir = ed.getPosition() - st.getPosition();
@@ -262,7 +270,12 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				bool diffPoint = true;
 				for (int j = 0; j < outPoints.size(); j++)
 				{
-					if (isPositionEqual(outPoints[j].getPosition(), xPos))
+					//if (isPositionEqual(outPoints[j].getPosition(), xPos))
+					//{
+					//	diffPoint = false;
+					//	break;
+					//}
+					if (isPointEqual(outPoints[j], x))
 					{
 						diffPoint = false;
 						break;
@@ -280,7 +293,12 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				bool diffPoint = true;
 				for (int j = 0; j < inPoints.size(); j++)
 				{
-					if (isPositionEqual(inPoints[j].getPosition(), xPos))
+					//if (isPositionEqual(inPoints[j].getPosition(), xPos))
+					//{
+					//	diffPoint = false;
+					//	break;
+					//}
+					if (isPointEqual(inPoints[j], x))
 					{
 						diffPoint = false;
 						break;
