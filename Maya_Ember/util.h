@@ -21,13 +21,13 @@ namespace ember
 
 #define GLOBAL_BSP_NODE_COUNT (7)
 
-#define AABB_OFFSET "10000000000000"
+#define AABB_OFFSET "100000000000"
 
-#define POSITION_CLOSE "100000"
+#define POSITION_CLOSE "1000"
 
-#define POINT_AABB ivec3{BigInt("10000000000000"), BigInt("10000000000000"), BigInt("10000000000000")}
+#define POINT_AABB ivec3{BigInt("100000000000"), BigInt("100000000000"), BigInt("100000000000")}
 
-#define BIG_NUM_STR "1000000000000000"
+#define BIG_NUM_STR "10000000000000"
 
 
 	// ==================================
@@ -84,7 +84,7 @@ namespace ember
 	/// </summary>
 	Segment getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis);
 
-	std::vector<int> TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV);
+	std::vector<int> TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV, int selfMark = -1);
 
 	/// <summary>
 	/// Split the polygon with a plane and create two new polygons

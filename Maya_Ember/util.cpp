@@ -249,20 +249,23 @@ Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 	return segment;
 }
 
-std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV)
+std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV, int selfMark)
 {
+	Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
+	Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
+	ivec3 dir = ed.getPosition() - st.getPosition();
+
 	std::vector<Point> inPoints;	// Temp solution to avoid counting twice when intersceting mutual line
 	std::vector<Point> outPoints;	// of two polygons
 	for (int i = 0; i < polygons.size(); i++)
 	{
+		if (i == selfMark)
+			continue;
+
 		Polygon* polygon = polygons[i];
 		Point x = intersectSegmentPolygon(polygon, segment);
 		if (x.isValid())
 		{
-			Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
-			Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
-			ivec3 dir = ed.getPosition() - st.getPosition();
-
 			BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
 			if (sign > 0)
 			{
@@ -467,26 +470,35 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 	{
 		if (x.x1 == 0 && x.x2 == 0 && x.x3 == 0) // When line parallel to the polygon
 		{
-			Point p1 = intersect(segment.bound1, segment.line.p1, segment.line.p2);
-			Point p2 = intersect(segment.bound2, segment.line.p1, segment.line.p2);
-			bool b1 = isPointInPolygon(polygon, p1); // Check if line is on polygon
-			bool b2 = isPointInPolygon(polygon, p2);
-			if (!b1 && !b2)
-			{
-				// Check if the segment has intersection with the polygon
-				for (int i = 0; i < polygon->bounds.size(); i++)
-				{
-					Point tmp = intersect(segment.line.p1, segment.line.p2, polygon->bounds[i]);
-					if (tmp.isValid())
-						return tmp;
-				}
+			//Point p1 = intersect(segment.bound1, segment.line.p1, segment.line.p2);
+			//Point p2 = intersect(segment.bound2, segment.line.p1, segment.line.p2);
+			//bool b1 = isPointInPolygon(polygon, p1); // Check if line is on polygon
+			//bool b2 = isPointInPolygon(polygon, p2);
+			//if (!b1 && !b2)
+			//{
+			//	// Check if the segment has intersection with the polygon
+			//	for (int i = 0; i < polygon->bounds.size(); i++)
+			//	{
+			//		Point tmp = intersect(segment.line.p1, segment.line.p2, polygon->bounds[i]);
+			//		if (tmp.isValid())
+			//			return tmp;
+			//	}
+			//	return x;
+			//}
+			//else
+			//{
+			//	return b1 == true ? p1 : p2;
+			//}
 
-				return x;
-			}
-			else
+			// Check if the segment has intersection with the polygon
+			for (int i = 0; i < polygon->bounds.size(); i++)
 			{
-				return b1 == true ? p1 : p2;
+				Point tmp = intersect(segment.line.p1, segment.line.p2, polygon->bounds[i]);
+				if (tmp.isValid())
+					return tmp;
 			}
+
+			return x;
 		}
 		else
 		{

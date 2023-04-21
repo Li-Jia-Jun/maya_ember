@@ -1,6 +1,10 @@
 ﻿#include "bsp.h"
 #include <cstdlib>
 #include <time.h>
+
+#include <ctime>
+#include <sstream>
+
 using namespace ember;
 
 
@@ -93,6 +97,8 @@ void BSPTree::Build(BSPNode* rootNode)
 	//}
 
 
+	clock_t start = std::clock();
+
 	printStr("build bsp start");
 	BuildLocalBSP(rootNode);
 	printStr("build bsp done");
@@ -103,6 +109,11 @@ void BSPTree::Build(BSPNode* rootNode)
 	printStr("face classification start");
 	FaceClassification(rootNode);
 	printStr("face classification done");
+	double timeLast = (double)(std::clock() - start) / CLOCKS_PER_SEC;
+	std::stringstream ss;
+	ss << "time lasts in seconds = ";
+	ss << timeLast;
+	printStr(ss.str().c_str());
 	for (int i = 0; i < outputPolygons.size(); i++)
 	{
 		drawPolygon(outputPolygons[i]);
@@ -129,19 +140,13 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 		if (x.x4 == 0)
 		{
 			x = FindPolygonInteriorComplex(polygon);
+			//printStr("find polygon interior complex!");
 		}
-
 		Segment segment = FindPathBackToRefPoint2(leaf->refPoint, x);
 
 		std::vector<int> WNV = leaf->refPoint.WNV;
 
-		std::vector<Polygon*> toTest;
-		for (int k = 0; k < candidates.size(); k++)
-		{
-			if (i == k) continue;
-			toTest.push_back(candidates[k]);
-		}
-		WNV = TraceSegment(toTest, segment, WNV);
+		WNV = TraceSegment(candidates, segment, WNV, i);
 		WNVBoolean(polygon, WNV);
 		printStr("one candidate done");
 	}
@@ -523,6 +528,10 @@ void LocalBSPTree::Build(BSPNode* leaf)
 			continue;
 		}
 
+		// If we can guarantee that input mesh has no self intersection
+		if (leaf->polygons[i]->meshId == nodes[0]->polygon->meshId)
+			continue;
+
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
 		for (int j = 0; j < segments.size(); j++)
 		{
@@ -551,11 +560,6 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, i
 
 	if(isLeaf)
 	{
-		//if (isDirectionEqual(s.getNormal(), node->polygon->support.getNormal()))
-		//{
-
-		//}
-
 		auto pairs = splitPolygon(node->polygon, s);
 		node->plane = s; // Current node becomes inner
 
