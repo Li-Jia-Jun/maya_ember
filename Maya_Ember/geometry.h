@@ -33,6 +33,11 @@ namespace ember
 			return ivec3{ x * b.x, y * b.y, z * b.z };
 		}
 
+		ivec3 operator*(BigInt i)
+		{
+			return ivec3{ x * i, y * i, z * i };
+		}
+
 		bool operator==(const ivec3& b)
 		{
 			return x == b.x && y == b.y && z == b.z;
@@ -166,14 +171,29 @@ namespace ember
 
 	struct Segment
 	{
+	private:
+		Segment();
+
+	public:
+		Segment(Line line, Plane b1, Plane b2);
 		Line line;
 		Plane bound1, bound2; // Start from bound1 and end at bound2
+		Point p1, p2;
 	};
 
 	struct Polygon
 	{
+	private:
+		Polygon();
+
+	public:
+		Polygon(int meshId, Plane support, std::vector<Plane> bounds);
+
 		int meshId;
 		Plane support;
 		std::vector<Plane> bounds;
+
+		std::vector<Point> points;		// Cache for reuse
+		AABB aabb;						// Cache for reuse
 	};
 }

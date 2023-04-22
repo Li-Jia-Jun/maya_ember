@@ -46,8 +46,6 @@ namespace ember
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
-	//bool isPositionEqual(ivec3 p1, ivec3 p2);
-
 	bool isPointEqual(Point p1, Point p2);
 
 	BigInt bigFloatToBigInt(BigFloat f);
@@ -59,20 +57,19 @@ namespace ember
 
 	bool isPointInPolygon(Polygon* polygon, Point point);
 
+	bool isAABBIntersect(AABB& a, AABB& b);
+
+	bool isSegmentInBound(Segment& segment, AABB& bound);
+
 	int getCloestAxis(ivec3 dir);
 
 	Line getAxisLine(ivec3 pos, int axis);
 
 	Point getPointfromPosition(ivec3 pos);
 
-	Point getPolygonPoint(Polygon* polygon, int index);
+	AABB getSegmentAABB(Segment& segment);
 
 	Segment getPolygonSegment(Polygon* polygon, int index);
-
-	/// <summary>
-	/// This create function guarantees that bounding planes orient outward
-	/// </summary>
-	Segment getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Plane bound2);
 
 	/// <summary>
 	/// Get polygon center of mass and rounded to integer coordinate
@@ -121,6 +118,7 @@ namespace ember
 	void printSegment(ember::Segment);
 	void printPolygon(Polygon*);
 	void drawPolygon(Polygon*);
+	void drawPolygons(std::vector<Polygon*> p);
 	void drawBoundingBox(AABB);
 	void drawPosition(ivec3);
 	void drawSegment(Segment s);

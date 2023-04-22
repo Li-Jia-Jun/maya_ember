@@ -40,11 +40,6 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 	return crossProduct.x == 0 && crossProduct.y == 0 && crossProduct.z == 0;
 }
 
-//bool ember::isPositionEqual(ivec3 p1, ivec3 p2)
-//{
-//	return abs(p1.x - p2.x) + abs(p1.y - p2.y) + abs(p1.z - p2.z) < BigInt(POSITION_CLOSE);
-//}
-
 bool ember::isPointEqual(Point p1, Point p2)
 {
 	BigInt close(POSITION_CLOSE);
@@ -53,6 +48,8 @@ bool ember::isPointEqual(Point p1, Point p2)
 	bool b3 = abs(p1.x3 * p2.x4 - p2.x3 * p1.x4) < close;
 	return b1 && b2 && b3;
 }
+
+
 
 BigInt ember::bigFloatToBigInt(BigFloat f)
 {
@@ -64,7 +61,6 @@ BigInt ember::bigFloatToBigInt(BigFloat f)
 	}
 	return BigInt(f_str);
 }
-
 
 bool ember::isPlaneEqual(Plane p1, Plane p2)
 {
@@ -85,6 +81,21 @@ bool ember::isPlaneEqual(Plane p1, Plane p2)
 		return p2.c / p1.c == p2.d / p1.d;
 	else
 		return false;
+}
+
+bool ember::isSegmentInBound(Segment& segment, AABB& bound)
+{
+	//ivec3 stPos = segment.p1.getPosition();
+	//ivec3 edPos = segment.p2.getPosition();
+
+	return true;
+}
+
+bool ember::isAABBIntersect(AABB& a, AABB& b)
+{
+	return (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
+		(a.min.y <= b.max.y && a.max.y >= b.min.y) &&
+		(a.min.z <= b.max.z && a.max.z >= b.min.z);
 }
 
 bool ember::isPointInPolygon(Polygon* polygon, Point point)
@@ -156,12 +167,19 @@ Point ember::getPointfromPosition(ivec3 pos)
 	return intersect(xy, yz, zx);
 }
 
-Point ember::getPolygonPoint(Polygon* polygon, int index)
+AABB ember::getSegmentAABB(Segment& segment)
 {
-	int pointCount = polygon->bounds.size();
-	Plane plane1 = polygon->bounds[index];
-	Plane plane2 = polygon->bounds[(index+1) % pointCount];
-	return intersect(plane1, plane2, polygon->support);
+	ivec3 pos1 = segment.p1.getPosition();
+	ivec3 pos2 = segment.p2.getPosition();
+
+	BigInt minX = pos1.x < pos2.x ? pos1.x : pos2.x;
+	BigInt minY = pos1.y < pos2.y ? pos1.y : pos2.y;
+	BigInt minZ = pos1.z < pos2.z ? pos1.z : pos2.z;
+	BigInt maxX = pos1.x > pos2.x ? pos1.x : pos2.x;
+	BigInt maxY = pos1.y > pos2.y ? pos1.y : pos2.y;
+	BigInt maxZ = pos1.z > pos2.z ? pos1.z : pos2.z;
+
+	return AABB{ ivec3{minX, minY, minZ}, ivec3{maxX, maxY, maxZ} };
 }
 
 Segment ember::getPolygonSegment(Polygon* polygon, int index)
@@ -173,26 +191,7 @@ Segment ember::getPolygonSegment(Polygon* polygon, int index)
 
 	// If the convex polygon can guarantee bounding plane orient outward,
 	// the new segment bounding plane will also orient outward
-	return Segment{ Line{polygon->support, plane2}, plane1, plane3 };
-}
-
-Segment ember::getSegmentfromPlanes(Plane plane1, Plane plane2, Plane bound1, Plane bound2)
-{
-	Point st = intersect(plane1, plane2, bound1);
-	Point ed = intersect(plane1, plane2, bound2);	
-	ivec3 dir = ed.getPosition() - st.getPosition();
-
-	// Make sure both bounds orient outside
-	if (ivec3::dot(bound1.getNormal(), dir) > 0)
-	{
-		bound1 = Plane(-bound1.a, -bound1.b, -bound1.c, -bound1.d ); 
-	}
-	if (ivec3::dot(bound2.getNormal(), dir) < 0)
-	{
-		bound2 = Plane( -bound2.a, -bound2.b, -bound2.c, -bound2.d );
-	}
-
-	return Segment{ Line{plane1, plane2}, bound1, bound2 };
+	return Segment( Line{polygon->support, plane2}, plane1, plane3 );
 }
 
 ivec3 ember::getRoundedPolygonCOM(Polygon* polygon)
@@ -202,15 +201,8 @@ ivec3 ember::getRoundedPolygonCOM(Polygon* polygon)
 	int pointCount = polygon->bounds.size();
 	for (int i = 0; i < pointCount; i++)
 	{
-		Point point = getPolygonPoint(polygon, i);
-		accumulate = accumulate + point.getPosition();
+		accumulate = accumulate + polygon->points[i].getPosition();
 	}
-
-	//Point point = getPolygonPoint(polygon, 0);
-	//char buffer[128];
-	//sprintf_s(buffer, "Compute polygon com, point 0 pos = %i %i %i ", point.getPosition().x, point.getPosition().y, point.getPosition().z);
-	//MString debug(buffer);
-	//MGlobal::displayInfo(buffer);
 
 	return ivec3{ accumulate.x / pointCount, accumulate.y / pointCount, accumulate.z / pointCount };
 }
@@ -218,7 +210,7 @@ ivec3 ember::getRoundedPolygonCOM(Polygon* polygon)
 Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 {
 	Line line;
-	Segment segment;
+	Plane bound1, bound2;
 
 	switch (axis)
 	{
@@ -226,34 +218,30 @@ Segment ember::getAxisSegmentFromPositions(ivec3 stPos, ivec3 edPos, int axis)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
 		// Make sure all bound planes orient outside
-		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ -1, 0, 0 });
-		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
+		bound1 = Plane::fromPositionNormal(stPos, ivec3{ -1, 0, 0 });
+		bound2 = Plane::fromPositionNormal(edPos, ivec3{ 1, 0, 0 });
 		break;
 	case 1:	// Y axis (Line planes are XY, YZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, 1 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, -1, 0 });
-		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
+		bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, -1, 0 });
+		bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 1, 0 });
 		break;
 	case 2:	// Z axis (Line planes are XZ, YZ)
 		line.p1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 1, 0 });
 		line.p2 = Plane::fromPositionNormal(stPos, ivec3{ 1, 0, 0 });
-		segment.bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, -1 });
-		segment.bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });;
+		bound1 = Plane::fromPositionNormal(stPos, ivec3{ 0, 0, -1 });
+		bound2 = Plane::fromPositionNormal(edPos, ivec3{ 0, 0, 1 });;
 	default:
 		break;
 	}
 
-	segment.line = line;
-
-	return segment;
+	return Segment(line, bound1, bound2);
 }
 
 std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment segment, std::vector<int> WNV, int selfMark)
-{
-	Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
-	Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
-	ivec3 dir = ed.getPosition() - st.getPosition();
+{	
+	AABB segmentAABB = getSegmentAABB(segment);
 
 	std::vector<Point> inPoints;	// Temp solution to avoid counting twice when intersceting mutual line
 	std::vector<Point> outPoints;	// of two polygons
@@ -263,9 +251,14 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 			continue;
 
 		Polygon* polygon = polygons[i];
+
+		if (!isAABBIntersect(segmentAABB, polygon->aabb))
+			continue;
+
 		Point x = intersectSegmentPolygon(polygon, segment);
 		if (x.isValid())
 		{
+			ivec3 dir = segment.p2.getPosition() - segment.p1.getPosition();
 			BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
 			if (sign > 0)
 			{
@@ -273,11 +266,6 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				bool diffPoint = true;
 				for (int j = 0; j < outPoints.size(); j++)
 				{
-					//if (isPositionEqual(outPoints[j].getPosition(), xPos))
-					//{
-					//	diffPoint = false;
-					//	break;
-					//}
 					if (isPointEqual(outPoints[j], x))
 					{
 						diffPoint = false;
@@ -426,17 +414,11 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	Polygon* rightPolygon = nullptr;
 	if (leftEdgePlanes.size() >= 2)
 	{
-		leftPolygon = new Polygon();
-		leftPolygon->meshId = polygon->meshId;
-		leftPolygon->bounds = leftEdgePlanes;
-		leftPolygon->support = polygon->support;
+		leftPolygon = new Polygon(polygon->meshId, polygon->support, leftEdgePlanes);
 	}
 	if (rightEdgePlanes.size() >= 2)
 	{
-		rightPolygon = new Polygon();
-		rightPolygon->meshId = polygon->meshId;
-		rightPolygon->bounds = rightEdgePlanes;
-		rightPolygon->support = polygon->support;
+		rightPolygon = new Polygon(polygon->meshId, polygon->support, rightEdgePlanes);
 	}
 
 	return std::make_pair(leftPolygon, rightPolygon);
@@ -470,40 +452,15 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 	{
 		if (x.x1 == 0 && x.x2 == 0 && x.x3 == 0) // When line parallel to the polygon
 		{
-			//Point p1 = intersect(segment.bound1, segment.line.p1, segment.line.p2);
-			//Point p2 = intersect(segment.bound2, segment.line.p1, segment.line.p2);
-			//bool b1 = isPointInPolygon(polygon, p1); // Check if line is on polygon
-			//bool b2 = isPointInPolygon(polygon, p2);
-			//if (!b1 && !b2)
-			//{
-			//	// Check if the segment has intersection with the polygon
-			//	for (int i = 0; i < polygon->bounds.size(); i++)
-			//	{
-			//		Point tmp = intersect(segment.line.p1, segment.line.p2, polygon->bounds[i]);
-			//		if (tmp.isValid())
-			//			return tmp;
-			//	}
-			//	return x;
-			//}
-			//else
-			//{
-			//	return b1 == true ? p1 : p2;
-			//}
-
 			// Check if the segment has intersection with the polygon
 			for (int i = 0; i < polygon->bounds.size(); i++)
 			{
 				Point tmp = intersect(segment.line.p1, segment.line.p2, polygon->bounds[i]);
 				if (tmp.isValid())
 					return tmp;
-			}
-
-			return x;
+			}	
 		}
-		else
-		{
-			return x;
-		}
+		return x;
 	}
 
 	// If intersection point is not within segment
@@ -667,7 +624,7 @@ void ember::drawPolygon(Polygon* p)
 
 	for (int i = 0; i < numVerts; i++)
 	{
-		Point vert = getPolygonPoint(p, i);
+		Point vert = p->points[i];
 
 		if (vert.x4 == 0)
 		{
@@ -703,6 +660,64 @@ void ember::drawPolygon(Polygon* p)
 	);
 	MString shapeName = transformFn.name() + "Shape";
 	
+	meshFn.setName(shapeName);
+	MGlobal::executeCommand("sets -add initialShadingGroup " + shapeName + ";");
+}
+
+void ember::drawPolygons(std::vector<Polygon*> p)
+{
+	MPointArray vertices;
+	MIntArray vertCount;
+	MIntArray vertList;
+	int totalVerts = 0;
+
+	for (int i = 0; i < p.size(); i++)
+	{
+		int numVerts = p[i]->bounds.size();
+
+		vertCount.append(numVerts);
+
+		for (int j = 0; j < numVerts; j++)
+		{
+			Point vert = p[i]->points[j];
+
+			if (vert.x4 == 0)
+			{
+				printStr("detect x4 == 0, change it to 1");
+				vert.x4 = 1;
+			}
+
+			ivec3 vertPos = vert.getPosition();
+			BigFloat x(vertPos.x.to_string());
+			BigFloat y(vertPos.y.to_string());
+			BigFloat z(vertPos.z.to_string());
+			BigFloat div(BIG_NUM_STR);
+			vertices.append(MPoint(
+				BigFloat::PrecDiv(x, div, 5).ToDouble(),
+				BigFloat::PrecDiv(y, div, 5).ToDouble(),
+				BigFloat::PrecDiv(z, div, 5).ToDouble()));
+			vertList.append(j + totalVerts);
+		}
+		totalVerts += numVerts;
+
+	}
+
+	MFnTransform transformFn;
+	MFnMesh meshFn;
+
+	MObject transformObj = transformFn.create();
+	transformFn.setName("Polygon0");
+
+	MObject meshObj = meshFn.create(
+		totalVerts, // num of verts
+		p.size(), // num of polygons
+		vertices, // vert pos array
+		vertCount, // polygon count array
+		vertList, // polygon connects
+		transformObj //parent object
+	);
+	MString shapeName = transformFn.name() + "Shape";
+
 	meshFn.setName(shapeName);
 	MGlobal::executeCommand("sets -add initialShadingGroup " + shapeName + ";");
 }

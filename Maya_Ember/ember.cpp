@@ -42,9 +42,13 @@ void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<
 	meshId++;
 }
 
-void EMBER::SetInitBound(AABB bound)
+void EMBER::SetInitBounds(AABB bound, AABB bound01, AABB bound02)
 {
 	initBound = bound;
+	this->bound01 = bound01;
+	this->bound02 = bound02;
+
+	bspTree.SetMeshBounds(bound01, bound02);
 }
 
 void EMBER::BuildBSPTree()
@@ -62,7 +66,6 @@ void EMBER::BuildBSPTree()
 	//WNV = TraceSegment(polygons, segment, WNV);
 	//printStr("trace result");
 	//printNum(WNV[0]);
-
 
 
 	// Build root node

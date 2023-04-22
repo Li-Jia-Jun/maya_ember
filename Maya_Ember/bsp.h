@@ -24,6 +24,7 @@ namespace ember
 	public:
 		BSPTree();
 		~BSPTree();
+		void SetMeshBounds(AABB bound01, AABB bound02);
 		void Build(BSPNode* rootNode);
 		void Split(BSPNode* node);
 		void BuildLocalBSP(BSPNode* leaf);
@@ -38,6 +39,8 @@ namespace ember
 		void WNVBoolean(Polygon* polygon, std::vector<int> WNV);
 		
 	private:
+		AABB bound01;
+		AABB bound02;
 		std::vector<BSPNode*> nodes;				// Element 0 is root node
 		std::vector<Polygon*> outputPolygons;		// The final output (boolean)
 	};
@@ -59,7 +62,7 @@ namespace ember
 	public:
 		LocalBSPTree(int index, BSPNode* leaf);
 		~LocalBSPTree();
-		void Build(BSPNode* leaf);
+		void Build(BSPNode* leaf, AABB& bound01, AABB& bound02);
 		void AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, int otherMark);
 		//void AddSegment(LocalBSPNode* node, Segment segment, Plane s, int otherMark);
 		void CollectPolygons(std::vector<Polygon*>& container);

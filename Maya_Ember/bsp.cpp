@@ -20,6 +20,12 @@ BSPTree::~BSPTree()
 	// TODO:: Recursively delete tree node 
 }
 
+void BSPTree::SetMeshBounds(AABB bound01, AABB bound02)
+{
+	this->bound01 = bound01;
+	this->bound02 = bound02;
+}
+
 void BSPTree::Build(BSPNode* rootNode)
 {
 	nodes.clear();
@@ -97,8 +103,8 @@ void BSPTree::Build(BSPNode* rootNode)
 	//}
 
 
+	
 	clock_t start = std::clock();
-
 	printStr("build bsp start");
 	BuildLocalBSP(rootNode);
 	printStr("build bsp done");
@@ -109,15 +115,14 @@ void BSPTree::Build(BSPNode* rootNode)
 	printStr("face classification start");
 	FaceClassification(rootNode);
 	printStr("face classification done");
+
 	double timeLast = (double)(std::clock() - start) / CLOCKS_PER_SEC;
 	std::stringstream ss;
 	ss << "time lasts in seconds = ";
 	ss << timeLast;
 	printStr(ss.str().c_str());
-	for (int i = 0; i < outputPolygons.size(); i++)
-	{
-		drawPolygon(outputPolygons[i]);
-	}
+
+	drawPolygons(outputPolygons);
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -143,12 +148,10 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 			//printStr("find polygon interior complex!");
 		}
 		Segment segment = FindPathBackToRefPoint2(leaf->refPoint, x);
-
 		std::vector<int> WNV = leaf->refPoint.WNV;
-
 		WNV = TraceSegment(candidates, segment, WNV, i);
+		
 		WNVBoolean(polygon, WNV);
-		printStr("one candidate done");
 	}
 }
 
@@ -157,6 +160,16 @@ Point BSPTree::FindPolygonInteriorSimple(Polygon* polygon)
 	// Find polygon interior x by COM and axis line intersection
 	// This is relatively computaional friendly
 	ivec3 c = getRoundedPolygonCOM(polygon);
+
+	// If polygon normal aligns with axis
+	// the COM is guaranteed to be on the surface 
+	ivec3 dir = polygon->support.getNormal();
+	if ((dir.x != 0 && dir.y == 0 && dir.z == 0) ||
+		(dir.y != 0 && dir.x == 0 && dir.z == 0) ||
+		(dir.z != 0 && dir.x == 0 && dir.y == 0))
+	{
+		return Point(c.x, c.y, c.z, 1);
+	}
 
 	// Pick the cloest axis that aligns with polygon normal
 	int axis = getCloestAxis(polygon->support.getNormal());
@@ -201,12 +214,13 @@ Point BSPTree::FindPolygonInteriorComplex(Polygon* polygon)
 
 void BSPTree::BuildLocalBSP(BSPNode* leaf)
 {
+
 	for (int j = 0; j < leaf->polygons.size(); j++)
 	{
 		LocalBSPTree* localTree = new LocalBSPTree(j, leaf);
-		localTree->Build(leaf);
+		localTree->Build(leaf, bound01, bound02);
 		leaf->localTrees.push_back(localTree);
-		printStr("one local bsp done");
+		//printStr("one local bsp done");
 	}
 }
 
@@ -473,7 +487,7 @@ Segment BSPTree::FindPathBackToRefPoint2(RefPoint ref, Point x)
 	Plane b1 = Plane::fromPositionNormal(ref.pos, ivec3{ -lineDir.x, -lineDir.y, -lineDir.z });
 	Plane b2 = Plane::fromPositionNormal(xPos, lineDir);
 
-	return Segment{ line, b1 ,b2 };
+	return Segment( line, b1 ,b2 );
 }
 
 void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
@@ -490,14 +504,13 @@ void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
 	else
 	{
 		if (WNV[0] > 0)
-		{
-			Polygon* flipPolygon = new Polygon();
-			flipPolygon->meshId = polygon->meshId;
-			flipPolygon->support = polygon->support.flip();
+		{		
+			std::vector<Plane> bounds;
 			for (int i = polygon->bounds.size() - 1; i >= 0; i--)
 			{
-				flipPolygon->bounds.push_back(polygon->bounds[i]);
+				bounds.push_back(polygon->bounds[i]);
 			}
+			Polygon* flipPolygon = new Polygon(polygon->meshId, polygon->support, bounds);
 			outputPolygons.push_back(flipPolygon);
 		}
 	}
@@ -518,8 +531,13 @@ LocalBSPTree::~LocalBSPTree()
 {
 }
 
-void LocalBSPTree::Build(BSPNode* leaf)
+void LocalBSPTree::Build(BSPNode* leaf, AABB& bound01, AABB& bound02)
 {
+	// Early out: check if polygon has intersection with the other mesh at all
+	AABB& otherBound = nodes[0]->polygon->meshId == 0 ? bound02 : bound01;
+	if (!isAABBIntersect(nodes[0]->polygon->aabb, otherBound))
+		return;
+
 	// Add segment by intersecting with all other polygons in the same leaf node
 	for (int i = 0; i < leaf->polygons.size(); i++)
 	{
@@ -528,8 +546,12 @@ void LocalBSPTree::Build(BSPNode* leaf)
 			continue;
 		}
 
-		// If we can guarantee that input mesh has no self intersection
+		// If we can guarantee that input mesh has no self intersections
 		if (leaf->polygons[i]->meshId == nodes[0]->polygon->meshId)
+			continue;
+
+		// If there is a chance for intersection
+		if (!isAABBIntersect(nodes[0]->polygon->aabb, leaf->polygons[i]->aabb))
 			continue;
 
 		std::vector<Segment> segments = IntersectWithPolygon(leaf->polygons[i]);
@@ -576,13 +598,6 @@ void LocalBSPTree::AddSegment(LocalBSPNode* node, Point v0, Point v1, Plane s, i
 			rightNode = new LocalBSPNode();
 			rightNode->polygon = pairs.second;
 		}
-
-		// Mark the node as not used in final output
-		//if (node->disable || otherMark < mark)
-		//{
-		//	if(leftNode != nullptr) leftNode->disable = true;
-		//	if(rightNode != nullptr) rightNode->disable = true;
-		//}
 
 		node->leftChild = leftNode;
 		node->rightChild = rightNode;
@@ -643,14 +658,6 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 		}
 		else
 		{
-			//ivec3 pos1 = points[0].getPosition();
-			//ivec3 pos2 = point.getPosition();
-			//if (!isPositionEqual(pos1, pos2))
-			//{
-			//	points.push_back(point);
-			//	break;  // 2 intersect points are sufficient to distinguish 
-			//			// between intersecting on a point or an overlapping area
-			//}
 			if (!isPointEqual(points[0], point))
 			{
 				points.push_back(point);
@@ -673,14 +680,6 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 			}
 			else
 			{
-				//ivec3 pos1 = points[0].getPosition();
-				//ivec3 pos2 = point.getPosition();
-				//if (!isPositionEqual(pos1, pos2))
-				//{
-				//	points.push_back(point);
-				//	break;  // 2 intersect points are sufficient to distinguish 
-				//			// between intersecting on a point or an overlapping area
-				//}
 				if (!isPointEqual(points[0], point))
 				{
 					points.push_back(point);
@@ -714,10 +713,25 @@ std::vector<Segment> LocalBSPTree::IntersectWithPolygon(Polygon* p2)
 		{
 			// C3: forms a non-degenerate segment (add this segment)
 			ivec3 nor = ivec3::cross(p1->support.getNormal(), p2->support.getNormal());
-			Plane bound1 = Plane::fromPositionNormal(points[0].getPosition(), nor);
-			Plane bound2 = Plane::fromPositionNormal(points[1].getPosition(), nor);
+
+			// Make sure the bound planes orient outward
+			ivec3 stPos = points[0].getPosition();
+			ivec3 edPos = points[1].getPosition();
+			ivec3 stNor = nor;
+			ivec3 edNor = nor;
+			if (ivec3::dot(nor, edPos - stPos) >= 0)
+			{
+				stNor = ivec3{ -nor.x, -nor.y, -nor.z };
+			}
+			else
+			{
+				edNor = ivec3{ -nor.x, -nor.y, -nor.z };
+			}
+
+			Plane bound1 = Plane::fromPositionNormal(stPos, stNor);
+			Plane bound2 = Plane::fromPositionNormal(edPos, edNor);
 			
-			segments.push_back(getSegmentfromPlanes(p1->support, p2->support, bound1, bound2));
+			segments.push_back(Segment{ Line{p1->support, p2->support}, bound1, bound2 });
 		}
 		else
 		{
