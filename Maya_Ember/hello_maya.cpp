@@ -42,6 +42,12 @@ MStatus helloMaya::doIt(const MArgList& argList)
 
 	BigFloat bf(BIG_NUM_STR);
 
+	if (selectionList.length() < 2)
+	{
+		MGlobal::displayInfo("Error: one mesh cannot perform boolean operations");
+		return status;
+	}
+
 	// Iterating through all the selected mesh objects
 	for (int i = 0; i < selectionList.length(); i++)
 	{
