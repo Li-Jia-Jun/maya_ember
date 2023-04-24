@@ -1,5 +1,8 @@
 #pragma once
 #include "util.h"
+#include <thread>
+#include <mutex>
+
 
 namespace ember
 {
@@ -27,6 +30,7 @@ namespace ember
 		void SetMeshBounds(AABB bound01, AABB bound02);
 		void Build(BSPNode* rootNode);
 		void Split(BSPNode* node);
+		void LeafTask(BSPNode* leaf);
 		void BuildLocalBSP(BSPNode* leaf);
 		void FaceClassification(BSPNode* leaf);
 		Point FindPolygonInteriorSimple(Polygon* polygon);
@@ -37,8 +41,9 @@ namespace ember
 		Segment FindPathBackToRefPoint2(RefPoint ref, Point x);
 
 		void WNVBoolean(Polygon* polygon, std::vector<int> WNV);
-		
+
 	private:
+		std::mutex mutex;
 		AABB bound01;
 		AABB bound02;
 		std::vector<BSPNode*> nodes;				// Element 0 is root node

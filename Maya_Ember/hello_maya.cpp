@@ -34,7 +34,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 	MSelectionList selectionList;
 	MGlobal::getActiveSelectionList(selectionList);
 
-	ember::EMBER ember = ember::EMBER();
+	ember::EMBER ember;
 
 	// For finding the bound of two meshes
 	float minX01 = 100000000, minY01 = 100000000, minZ01 = 100000000, maxX01 = -100000000, maxY01 = -100000000, maxZ01 = -100000000;

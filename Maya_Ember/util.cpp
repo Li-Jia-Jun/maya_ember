@@ -83,14 +83,6 @@ bool ember::isPlaneEqual(Plane p1, Plane p2)
 		return false;
 }
 
-bool ember::isSegmentInBound(Segment& segment, AABB& bound)
-{
-	//ivec3 stPos = segment.p1.getPosition();
-	//ivec3 edPos = segment.p2.getPosition();
-
-	return true;
-}
-
 bool ember::isAABBIntersect(AABB& a, AABB& b)
 {
 	return (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
@@ -251,6 +243,10 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 			continue;
 
 		Polygon* polygon = polygons[i];
+
+		// If we can guarantee that input mesh does not have self folding
+		if (polygon->meshId == selfMark)
+			continue;
 
 		if (!isAABBIntersect(segmentAABB, polygon->aabb))
 			continue;

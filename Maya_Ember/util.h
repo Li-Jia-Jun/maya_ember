@@ -16,18 +16,20 @@
 namespace ember
 {
 	// ======== Configure =============
+
+#define USE_MULTI_THREADING (true)
 	
-#define LEAF_POLYGON_COUNT (6)
+#define LEAF_POLYGON_COUNT (20)
 
 #define GLOBAL_BSP_NODE_COUNT (7)
 
-#define AABB_OFFSET "100000000000"
+#define AABB_OFFSET "10000000000000"
 
-#define POSITION_CLOSE "1000"
+#define POSITION_CLOSE "10000"
 
-#define POINT_AABB ivec3{BigInt("100000000000"), BigInt("100000000000"), BigInt("100000000000")}
+#define POINT_AABB ivec3{BigInt("10000000000000"), BigInt("10000000000000"), BigInt("10000000000000")}
 
-#define BIG_NUM_STR "10000000000000"
+#define BIG_NUM_STR "1000000000000000"
 
 
 	// ==================================
@@ -58,8 +60,6 @@ namespace ember
 	bool isPointInPolygon(Polygon* polygon, Point point);
 
 	bool isAABBIntersect(AABB& a, AABB& b);
-
-	bool isSegmentInBound(Segment& segment, AABB& bound);
 
 	int getCloestAxis(ivec3 dir);
 

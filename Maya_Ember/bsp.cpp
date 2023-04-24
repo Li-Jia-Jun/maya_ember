@@ -31,41 +31,43 @@ void BSPTree::Build(BSPNode* rootNode)
 	nodes.clear();
 	nodes.push_back(rootNode);
 
+	clock_t start = std::clock();
+
 	// Create tree nodes recursively (in breadth first order)
-	//std::queue<BSPNode*> toTraverse;
-	//toTraverse.push(rootNode);
-	//int tempCount = 0;
-	//while (!toTraverse.empty())
-	//{	
-	//	BSPNode* node = toTraverse.front();
-	//	toTraverse.pop();
+	std::queue<BSPNode*> toTraverse;
+	toTraverse.push(rootNode);
+	int iterCount = 0;
+	while (!toTraverse.empty())
+	{	
+		BSPNode* node = toTraverse.front();
+		toTraverse.pop();
 
-	//	// Leaf node determination
-	//	if (node->polygons.size() <= LEAF_POLYGON_COUNT)
-	//		continue;
+		// Leaf node determination
+		if (node->polygons.size() <= LEAF_POLYGON_COUNT)
+			continue;
 
-	//	// Split AABB
-	//	Split(node);
+		// Split AABB
+		Split(node);
 
-	//	// Collect new nodes
-	//	if (node->leftChild != nullptr)
-	//	{
-	//		toTraverse.push(node->leftChild);
-	//		nodes.push_back(node->leftChild);
-	//	}
-	//	if (node->rightChild != nullptr)
-	//	{
-	//		toTraverse.push(node->rightChild);
-	//		nodes.push_back(node->rightChild);
-	//	}
-	//	if (++tempCount >= GLOBAL_BSP_NODE_COUNT)
-	//	{
-	//		break;
-	//	}
-	//}
-	//printStr("Global BSP Construction Done");
+		// Collect new nodes
+		if (node->leftChild != nullptr)
+		{
+			toTraverse.push(node->leftChild);
+			nodes.push_back(node->leftChild);
+		}
+		if (node->rightChild != nullptr)
+		{
+			toTraverse.push(node->rightChild);
+			nodes.push_back(node->rightChild);
+		}
+		if (++iterCount >= GLOBAL_BSP_NODE_COUNT)
+		{
+			break;
+		}
+	}
+	printStr("Global BSP Construction Done");
 
-	// Draw leaf nodes
+	//// Draw leaf nodes
 	//for (int i = 0; i < nodes.size(); i++)
 	//{
 	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
@@ -83,46 +85,51 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	printVector(nodes[i]->refPoint.WNV);
 	//}
 
+	// Gather leaf nodes
+	std::vector<BSPNode*> leaves;
+	for (int i = 0; i < nodes.size(); i++)
+	{
+		if (nodes[i]->leftChild == nullptr && nodes[i]->rightChild == nullptr)
+			leaves.push_back(nodes[i]);
+	}
+
 	// Handle leaf node
-	//for (int i = 0; i < nodes.size(); i++)
-	//{
-	//	BSPNode* leaf = nodes[i];
-	//	if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
-	//	{
-	//		continue;
-	//	}
-	//	BuildLocalBSP(leaf);
-	//	FaceClassification(leaf);
-	//}
-
-	// Intersection test
-	//LocalBSPTree* localTree = new LocalBSPTree(0, rootNode);
-	//std::vector<Segment> segs = localTree->IntersectWithPolygon(rootNode->polygons[1]);
-	//for (int i = 0; i < segs.size(); i++) {
-	//	drawSegment(segs[i]);
-	//}
-
-
-	
-	clock_t start = std::clock();
-	printStr("build bsp start");
-	BuildLocalBSP(rootNode);
-	printStr("build bsp done");
-	//for (int i = 0; i < rootNode->localTrees.size(); i++)
-	//{
-	//	rootNode->localTrees[i]->drawlocalBSPTree();
-	//}
-	printStr("face classification start");
-	FaceClassification(rootNode);
-	printStr("face classification done");
+#if USE_MULTI_THREADING
+	std::vector<std::thread> threads(leaves.size());
+#endif
+	for (int i = 0; i < leaves.size(); i++)
+	{
+		BSPNode* leaf = leaves[i];
+		if (leaf->leftChild != nullptr || leaf->rightChild != nullptr)
+		{
+			continue;
+		}
+#if USE_MULTI_THREADING
+		threads[i] = std::thread(&BSPTree::LeafTask, this, leaf);
+#else
+		LeafTask(leaf);
+#endif
+	}
+#if USE_MULTI_THREADING
+	for (int i = 0; i < threads.size(); i++)
+	{
+		threads[i].join();
+	}
+#endif
 
 	double timeLast = (double)(std::clock() - start) / CLOCKS_PER_SEC;
-	std::stringstream ss;
-	ss << "time lasts in seconds = ";
-	ss << timeLast;
-	printStr(ss.str().c_str());
+	std::stringstream ss2;
+	ss2 << "time lasts in seconds = ";
+	ss2 << timeLast;
+	printStr(ss2.str().c_str());
 
 	drawPolygons(outputPolygons);
+}
+
+void BSPTree::LeafTask(BSPNode* leaf)
+{
+	BuildLocalBSP(leaf);
+	FaceClassification(leaf);
 }
 
 void BSPTree::FaceClassification(BSPNode* leaf)
@@ -145,7 +152,6 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 		if (x.x4 == 0)
 		{
 			x = FindPolygonInteriorComplex(polygon);
-			//printStr("find polygon interior complex!");
 		}
 		Segment segment = FindPathBackToRefPoint2(leaf->refPoint, x);
 		std::vector<int> WNV = leaf->refPoint.WNV;
@@ -214,7 +220,6 @@ Point BSPTree::FindPolygonInteriorComplex(Polygon* polygon)
 
 void BSPTree::BuildLocalBSP(BSPNode* leaf)
 {
-
 	for (int j = 0; j < leaf->polygons.size(); j++)
 	{
 		LocalBSPTree* localTree = new LocalBSPTree(j, leaf);
@@ -254,8 +259,6 @@ void BSPTree::Split(BSPNode* node)
 		midValue = BigInt((min.z + max.z) / BigInt(2));
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
-	printStr("split plane = ");
-	printPlane(splitPlane);
 
 	// Divide polygons by split plane
 	std::vector<Polygon*> leftPolygons;
@@ -494,6 +497,10 @@ void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
 {
 	// Temporary method to map WNV (assumes we only have 2 meshes for now)
 	
+#if USE_MULTI_THREADING
+	const std::lock_guard<std::mutex> lock(mutex);
+#endif 
+
 	if (polygon->meshId == 0)
 	{
 		if (WNV[1] == 0)
@@ -514,6 +521,7 @@ void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
 			outputPolygons.push_back(flipPolygon);
 		}
 	}
+
 }
 
 // ========== Local BSP ============
