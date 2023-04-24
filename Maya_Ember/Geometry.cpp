@@ -48,6 +48,10 @@ Polygon::Polygon(int meshId, Plane support, std::vector<Plane> bounds) :
 			aabb.max.z = pos.z;
 		}
 	}
+
+	BigInt offset(AABB_OFFSET);
+	aabb.min = aabb.min - ivec3{ offset, offset, offset };
+	aabb.max = aabb.max + ivec3{ offset, offset, offset };
 }
 
 Segment::Segment(Line line, Plane b1, Plane b2) :

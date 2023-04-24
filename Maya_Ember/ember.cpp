@@ -53,9 +53,11 @@ void EMBER::SetInitBounds(AABB bound, AABB bound01, AABB bound02)
 
 void EMBER::BuildBSPTree()
 {
-	// Temp test code
+	//// Temp test code
+	//drawBoundingBox(polygons[0]->aabb);
+	//drawBoundingBox(polygons[1]->aabb);
 	//std::vector<int> WNV{ 0, 0 };
-	//Segment segment{ Line{Plane(0, 1, 0, 0), Plane(0, 0, 1, 0)}, Plane(-1, 0, 0, BigInt(BIG_NUM_STR)),  Plane(1, 0, 0, 0) };
+	//Segment segment{ Line{Plane(0, 1, 0, 0), Plane(1, 0, 0, 0)}, Plane(0, 0, -1, BigInt("5100000000000000")),  Plane(0, 0, 1, 0) };
 	//Point st = intersect(segment.line.p1, segment.line.p2, segment.bound1);
 	//Point ed = intersect(segment.line.p1, segment.line.p2, segment.bound2);
 	//if (st.isValid() && ed.isValid())
@@ -66,6 +68,7 @@ void EMBER::BuildBSPTree()
 	//WNV = TraceSegment(polygons, segment, WNV);
 	//printStr("trace result");
 	//printNum(WNV[0]);
+	//printNum(WNV[1]);
 
 
 	// Build root node

@@ -67,24 +67,6 @@ void BSPTree::Build(BSPNode* rootNode)
 	}
 	printStr("Global BSP Construction Done");
 
-	//// Draw leaf nodes
-	//for (int i = 0; i < nodes.size(); i++)
-	//{
-	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
-	//	drawBoundingBox(nodes[i]->bound);
-	//	drawPosition(nodes[i]->refPoint.pos);
-	//	for (int j = 0; j < nodes[i]->polygons.size(); j++)
-	//	{
-	//		drawPolygon(nodes[i]->polygons[j]);
-	//	}
-	//}
-	//printStr("WNV vectors for leaf nodes: ");
-	//for (int i = 0; i < nodes.size(); i++)
-	//{
-	//	if (nodes[i]->leftChild != nullptr || nodes[i]->rightChild != nullptr) continue;
-	//	printVector(nodes[i]->refPoint.WNV);
-	//}
-
 	// Gather leaf nodes
 	std::vector<BSPNode*> leaves;
 	for (int i = 0; i < nodes.size(); i++)
@@ -92,6 +74,29 @@ void BSPTree::Build(BSPNode* rootNode)
 		if (nodes[i]->leftChild == nullptr && nodes[i]->rightChild == nullptr)
 			leaves.push_back(nodes[i]);
 	}
+
+	//// Draw leaf nodes
+	//for (int i = 0; i < leaves.size(); i++)
+	//{
+	//	drawBoundingBox(leaves[i]->bound);
+	//	drawPosition(leaves[i]->refPoint.pos);
+	//	for (int j = 0; j < leaves[i]->polygons.size(); j++)
+	//	{
+	//		drawPolygon(leaves[i]->polygons[j]);
+
+	//		if (i == 0 && ((j == 0) || (j == 11)))
+	//		{
+	//			printStr("wrong polygon = ");
+	//			printPolygon(leaves[i]->polygons[j]);
+	//		}
+	//	}
+	//}
+	//printStr("WNV vectors for leaf nodes: ");
+	//for (int i = 0; i < leaves.size(); i++)
+	//{
+	//	printVector(leaves[i]->refPoint.WNV);
+	//}
+
 
 	// Handle leaf node
 #if USE_MULTI_THREADING
@@ -118,12 +123,33 @@ void BSPTree::Build(BSPNode* rootNode)
 #endif
 
 	double timeLast = (double)(std::clock() - start) / CLOCKS_PER_SEC;
-	std::stringstream ss2;
-	ss2 << "time lasts in seconds = ";
-	ss2 << timeLast;
-	printStr(ss2.str().c_str());
+	std::stringstream ss;
+	ss << "algorithm time in seconds = ";
+	ss << timeLast;
+	printStr(ss.str().c_str());
 
 	drawPolygons(outputPolygons);
+
+
+
+	// Test code for the second half
+	//clock_t start = std::clock();
+	//printStr("build bsp start");
+	//BuildLocalBSP(rootNode);
+	//printStr("build bsp done");
+	//double timeLast = (double)(std::clock() - start) / CLOCKS_PER_SEC;
+	//std::stringstream ss;
+	//ss << "time lasts in seconds = ";
+	//ss << timeLast;
+	//printStr(ss.str().c_str());
+	////for (int i = 0; i < rootNode->localTrees.size(); i++)
+	////{
+	//// rootNode->localTrees[i]->drawlocalBSPTree();
+	////}
+	//printStr("face classification start");
+	//FaceClassification(rootNode);
+	//printStr("face classification done");
+	//drawPolygons(outputPolygons);
 }
 
 void BSPTree::LeafTask(BSPNode* leaf)

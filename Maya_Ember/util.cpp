@@ -85,9 +85,9 @@ bool ember::isPlaneEqual(Plane p1, Plane p2)
 
 bool ember::isAABBIntersect(AABB& a, AABB& b)
 {
-	return (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
-		(a.min.y <= b.max.y && a.max.y >= b.min.y) &&
-		(a.min.z <= b.max.z && a.max.z >= b.min.z);
+	return (a.min.x < b.max.x && a.max.x > b.min.x) &&
+		(a.min.y < b.max.y && a.max.y > b.min.y) &&
+		(a.min.z < b.max.z && a.max.z > b.min.z);
 }
 
 bool ember::isPointInPolygon(Polygon* polygon, Point point)
@@ -163,15 +163,14 @@ AABB ember::getSegmentAABB(Segment& segment)
 {
 	ivec3 pos1 = segment.p1.getPosition();
 	ivec3 pos2 = segment.p2.getPosition();
-
 	BigInt minX = pos1.x < pos2.x ? pos1.x : pos2.x;
 	BigInt minY = pos1.y < pos2.y ? pos1.y : pos2.y;
 	BigInt minZ = pos1.z < pos2.z ? pos1.z : pos2.z;
 	BigInt maxX = pos1.x > pos2.x ? pos1.x : pos2.x;
 	BigInt maxY = pos1.y > pos2.y ? pos1.y : pos2.y;
 	BigInt maxZ = pos1.z > pos2.z ? pos1.z : pos2.z;
-
-	return AABB{ ivec3{minX, minY, minZ}, ivec3{maxX, maxY, maxZ} };
+	BigInt offset(AABB_OFFSET);
+	return AABB{ ivec3{minX - offset, minY - offset, minZ - offset}, ivec3{maxX + offset, maxY + offset, maxZ + offset} };
 }
 
 Segment ember::getPolygonSegment(Polygon* polygon, int index)
@@ -235,6 +234,8 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 {	
 	AABB segmentAABB = getSegmentAABB(segment);
 
+	std::vector<int> inPointMeshes;
+	std::vector<int> outPointMeshes;
 	std::vector<Point> inPoints;	// Temp solution to avoid counting twice when intersceting mutual line
 	std::vector<Point> outPoints;	// of two polygons
 	for (int i = 0; i < polygons.size(); i++)
@@ -262,7 +263,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				bool diffPoint = true;
 				for (int j = 0; j < outPoints.size(); j++)
 				{
-					if (isPointEqual(outPoints[j], x))
+					if (isPointEqual(outPoints[j], x) && polygon->meshId == outPointMeshes[j])
 					{
 						diffPoint = false;
 						break;
@@ -272,6 +273,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				{
 					WNV[polygon->meshId] = WNV[polygon->meshId] - 1;
 					outPoints.push_back(x);
+					outPointMeshes.push_back(polygon->meshId);
 				}
 			}
 			else if (sign < 0)
@@ -280,12 +282,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				bool diffPoint = true;
 				for (int j = 0; j < inPoints.size(); j++)
 				{
-					//if (isPositionEqual(inPoints[j].getPosition(), xPos))
-					//{
-					//	diffPoint = false;
-					//	break;
-					//}
-					if (isPointEqual(inPoints[j], x))
+					if (isPointEqual(inPoints[j], x) && polygon->meshId == inPointMeshes[j])
 					{
 						diffPoint = false;
 						break;
@@ -295,6 +292,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 				{
 					WNV[polygon->meshId] = WNV[polygon->meshId] + 1;
 					inPoints.push_back(x);
+					inPointMeshes.push_back(polygon->meshId);
 				}
 			}
 			else
