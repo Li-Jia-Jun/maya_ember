@@ -17,19 +17,21 @@ namespace ember
 {
 	// ======== Configure =============
 
-#define USE_MULTI_THREADING (true)
+#define USE_MULTI_THREADING (false)
 	
 #define LEAF_POLYGON_COUNT (20)
 
-#define GLOBAL_BSP_NODE_COUNT (7)
+#define GLOBAL_BSP_NODE_COUNT (2)
 
-#define AABB_OFFSET "100000000000000"
+#define DIV_PRECISION 7
 
-#define POSITION_CLOSE "100000"
+#define AABB_OFFSET "1000000000000"
 
-#define POINT_AABB ivec3{BigInt("100000000000000"), BigInt("100000000000000"), BigInt("100000000000000")}
+#define POSITION_CLOSE "10000"
 
-#define BIG_NUM_STR "10000000000000000"
+#define POINT_AABB ivec3{BigInt("1000000000000"), BigInt("1000000000000"), BigInt("1000000000000")}
+
+#define BIG_NUM_STR "100000000000000"
 
 
 	// ==================================

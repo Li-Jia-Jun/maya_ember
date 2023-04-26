@@ -12,33 +12,6 @@ void EMBER::ReadMeshData(std::vector<std::vector<ivec3>> &vertices, std::vector<
 		polygons.push_back(ember::fromPositionNormal(vertices[i], normals[i], meshId));
 	}
 
-	// test
-	//printStr("test point in polygon");
-	//Point testPoint(0, BIG_NUM, 0, 1);
-	//drawPosition(testPoint.getPosition());
-	//for (int i = 0; i < polygons.size(); i++)
-	//{
-	//	Polygon* polygon = polygons[i];		
-	//	for (int j = 0; j < polygon->bounds.size(); j++)
-	//	{
-	//		int c = classify(testPoint, polygon->bounds[j]);
-	//		printNum(c);
-	//	}
-	//}
-
-	//printStr("test2 point in polygon");
-	//Point testPoint2(BIG_NUM * 2, 0, 0, 1);
-	//drawPosition(testPoint2.getPosition());
-	//for (int i = 0; i < polygons.size(); i++)
-	//{
-	//	Polygon* polygon = polygons[i];
-	//	for (int j = 0; j < polygon->bounds.size(); j++)
-	//	{
-	//		int c = classify(testPoint2, polygon->bounds[j]);
-	//		printNum(c);
-	//	}
-	//}
-
 	meshId++;
 }
 
@@ -84,4 +57,41 @@ void EMBER::BuildBSPTree()
 
 	// Build BSP tree based on root node
 	bspTree.Build(root);
+
+
+
+
+	//Plane support= Plane{ BigInt("-98768800000000"), BigInt("7409900000000"), BigInt("-13777100000000"), BigInt("3317718840710000000000000000") };
+	//std::vector<Plane> bounds;
+	//bounds.push_back(Plane{ BigInt("162450000000000000000"), BigInt("-925565669070000000000000000"), BigInt("-497809052430000000000000000"), BigInt("105094497538729380000000000000000000000000") });
+	//bounds.push_back(Plane{ BigInt("-3128674205600000000000000000"), BigInt("-9356921529280000000000000000"), BigInt("17397096924480000000000000000"), BigInt("105094669505468480000000000000000000000000") });
+	//bounds.push_back(Plane{ BigInt("0"), BigInt("1"), BigInt("0"), BigInt("0") });
+	//bounds.push_back(Plane{ BigInt("3128674842320000000000000000"), BigInt("9356911652400000000000000000"), BigInt("-17397106801360000000000000000"), BigInt("105095695574291376000000000000000000000000") });
+	//Polygon* parent = new Polygon(0, support, bounds);
+	//drawPolygon(parent);
+	//auto pairs = splitPolygon(parent, Plane{ 0, 0, 1, 0 });
+	//if (pairs.first != nullptr) { drawPolygon(pairs.first); printPolygon(pairs.first); }
+	//if(pairs.second != nullptr) drawPolygon(pairs.second);
+
+	//Point p1 = Point{BigInt("-59166576011249081815388800000000000000000000000000000000"), 0, BigInt("13035089203017448000000000000000000000000000000000"), BigInt("1761394444112551984000000000000000000000000")};
+	//Point p2 = Point{BigInt("-31822375840305852810940800000000000000000000000000000000"), BigInt("-13035089203017448000000000000000000000000000000000"), 0, BigInt("947355074137225904000000000000000000000000")};
+	//if (isPointEqual(p1, p2))
+	//{
+	//	printStr("point equal");
+	//}
+	//else
+	//{
+	//	printStr("not equal");
+	//}
+
+	//support = Plane{ BigInt("-98768800000000"), BigInt("7409900000000"), BigInt("-13777100000000"), BigInt("3317718840710000000000000000") };
+	//bounds.clear();
+	//bounds.push_back(Plane{ BigInt("0"), BigInt("0"), BigInt("-1"), BigInt("0") });
+	//bounds.push_back(Plane{ BigInt("-3128674205600000000000000000"), BigInt("-9356921529280000000000000000"), BigInt("17397096924480000000000000000"), BigInt("105094669505468480000000000000000000000000") });
+	//bounds.push_back(Plane{ BigInt("0"), BigInt("1"), BigInt("0"), BigInt("0") });
+	//Polygon* p = new Polygon(0, support, bounds);
+	// 
+	//auto pairs = splitPolygon(p, Plane{ 1, 0, 0, 1 });
+	//printPolygon(p);
+	//drawPolygon(p);
 }

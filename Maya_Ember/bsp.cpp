@@ -34,6 +34,7 @@ void BSPTree::Build(BSPNode* rootNode)
 	clock_t start = std::clock();
 
 	// Create tree nodes recursively (in breadth first order)
+	printStr("Start Building Global BSP");
 	std::queue<BSPNode*> toTraverse;
 	toTraverse.push(rootNode);
 	int iterCount = 0;
@@ -83,12 +84,12 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	for (int j = 0; j < leaves[i]->polygons.size(); j++)
 	//	{
 	//		drawPolygon(leaves[i]->polygons[j]);
-
-	//		if (i == 0 && ((j == 0) || (j == 11)))
-	//		{
-	//			printStr("wrong polygon = ");
-	//			printPolygon(leaves[i]->polygons[j]);
-	//		}
+	//		//if (i == 0)
+	//		//{
+	//		//	printStr("polygon = ");
+	//		//	printNum(j);
+	//		//	printPolygon(leaves[i]->polygons[j]);
+	//		//}
 	//	}
 	//}
 	//printStr("WNV vectors for leaf nodes: ");
@@ -96,7 +97,7 @@ void BSPTree::Build(BSPNode* rootNode)
 	//{
 	//	printVector(leaves[i]->refPoint.WNV);
 	//}
-
+	//return;
 
 	// Handle leaf node
 #if USE_MULTI_THREADING
@@ -285,6 +286,8 @@ void BSPTree::Split(BSPNode* node)
 		midValue = BigInt((min.z + max.z) / BigInt(2));
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
+	//printStr("split plane = ");
+	//printPlane(splitPlane);
 
 	// Divide polygons by split plane
 	std::vector<Polygon*> leftPolygons;

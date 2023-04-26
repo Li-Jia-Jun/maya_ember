@@ -42,11 +42,40 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 
 bool ember::isPointEqual(Point p1, Point p2)
 {
-	BigInt close(POSITION_CLOSE);
-	bool b1 = abs(p1.x1 * p2.x4 - p2.x1 * p1.x4) < close;
-	bool b2 = abs(p1.x2 * p2.x4 - p2.x2 * p1.x4) < close;
-	bool b3 = abs(p1.x3 * p2.x4 - p2.x3 * p1.x4) < close;
-	return b1 && b2 && b3;
+	//BigInt close(POSITION_CLOSE);
+	//BigInt scale = abs(p1.x4 * p2.x4);
+	//bool b1 = abs(p1.x1 * p2.x4 - p2.x1 * p1.x4) < close * scale;
+	//bool b2 = abs(p1.x2 * p2.x4 - p2.x2 * p1.x4) < close * scale;
+	//bool b3 = abs(p1.x3 * p2.x4 - p2.x3 * p1.x4) < close * scale;
+	//return b1 && b2 && b3;
+
+	ivec3 pos1 = p1.getPosition();
+	ivec3 pos2 = p2.getPosition();
+	BigFloat bigNum = BigFloat(BIG_NUM_STR);
+	BigFloat x1(pos1.x.to_string());
+	BigFloat y1(pos1.y.to_string());
+	BigFloat z1(pos1.z.to_string());
+	BigFloat x2(pos2.x.to_string());
+	BigFloat y2(pos2.y.to_string());
+	BigFloat z2(pos2.z.to_string());
+	x1 = BigFloat::PrecDiv(x1, bigNum, 7);
+	y1 = BigFloat::PrecDiv(y1, bigNum, 7);
+	z1 = BigFloat::PrecDiv(z1, bigNum, 7);	
+	x2 = BigFloat::PrecDiv(x2, bigNum, 7);
+	y2 = BigFloat::PrecDiv(y2, bigNum, 7);
+	z2 = BigFloat::PrecDiv(z2, bigNum, 7);
+	//printStr("x1, y1, z1 = ");
+	//printStr(x1.ToString().c_str());
+	//printStr(y1.ToString().c_str());
+	//printStr(z1.ToString().c_str());
+	//printStr("x2, y2, z2 = ");
+	//printStr(x2.ToString().c_str());
+	//printStr(y2.ToString().c_str());
+	//printStr(z2.ToString().c_str());
+	bool bx = x1 > x2 ? (x1 - x2) < 0.000001 : (x2 - x1) < 0.000001;
+	bool by = y1 > y2 ? (y1 - y2) < 0.000001 : (y2 - y1) < 0.000001;
+	bool bz = z1 > z2 ? (z1 - z2) < 0.000001 : (z2 - z1) < 0.000001;
+	return bx && by && bz;
 }
 
 
@@ -57,6 +86,8 @@ BigInt ember::bigFloatToBigInt(BigFloat f)
 	auto iter = std::find(f_str.begin(), f_str.end(), '.');
 	if (iter != f_str.end())
 	{
+		//printStr("erase floating point digits = ");
+		//printStr(f_str.substr(iter - f_str.begin(), f_str.end() - f_str.begin()).c_str());
 		f_str.erase(iter, f_str.end());
 	}
 	return BigInt(f_str);
@@ -321,13 +352,14 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	for (int j = 0; j < boundSize; j++)
 	{
 		Plane edgePlane = polygon->bounds[j];
-		Plane bound1 = polygon->bounds[(j - 1 + boundSize) % boundSize];
-		Plane bound2 = polygon->bounds[(j + 1) % boundSize];
-
-		Point p1 = intersect(polygon->support, edgePlane, bound1);
-		Point p2 = intersect(polygon->support, edgePlane, bound2);
+		Point p1 = polygon->points[(j - 1 + boundSize) % boundSize];
+		Point p2 = polygon->points[j];
+		Point splitPoint = intersect(polygon->support, polygon->bounds[j], splitPlane);
 		int c1 = classify(p1, splitPlane);
 		int c2 = classify(p2, splitPlane);
+		// Edge case
+		if (splitPoint.isValid() && isPointEqual(splitPoint, p1)) c1 = 0;
+		if (splitPoint.isValid() && isPointEqual(splitPoint, p2)) c2 = 0;
 
 		// Keep track of zero points on the split plane
 		if (c1 == 0)
@@ -362,6 +394,8 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 		}
 		else
 		{
+			// Edge case: when split point is too close to edge point
+			Point splitPoint = intersect(polygon->support, polygon->bounds[j], splitPlane);
 			if (!hasSplit)
 			{
 				hasSplit = true;
@@ -370,15 +404,13 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 				{
 					leftEdgePlanes.push_back(edgePlane);
 					leftEdgePlanes.push_back(splitPlane);
-
 					rightEdgePlanes.push_back(splitPlane.flip());
-					rightEdgePlanes.push_back(edgePlane);
+					rightEdgePlanes.push_back(edgePlane);	
 				}
 				else
 				{
 					leftEdgePlanes.push_back(splitPlane);
 					leftEdgePlanes.push_back(edgePlane);
-
 					rightEdgePlanes.push_back(edgePlane);
 					rightEdgePlanes.push_back(splitPlane.flip());
 				}
@@ -406,11 +438,11 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	// Collect divided edges to build polygons
 	Polygon* leftPolygon = nullptr;
 	Polygon* rightPolygon = nullptr;
-	if (leftEdgePlanes.size() >= 2)
+	if (leftEdgePlanes.size() > 2)
 	{
 		leftPolygon = new Polygon(polygon->meshId, polygon->support, leftEdgePlanes);
 	}
-	if (rightEdgePlanes.size() >= 2)
+	if (rightEdgePlanes.size() > 2)
 	{
 		rightPolygon = new Polygon(polygon->meshId, polygon->support, rightEdgePlanes);
 	}
@@ -632,9 +664,9 @@ void ember::drawPolygon(Polygon* p)
 		BigFloat z(vertPos.z.to_string());
 		BigFloat div(BIG_NUM_STR);
 		vertices.append(MPoint(
-			BigFloat::PrecDiv(x, div, 5).ToDouble(),
-			BigFloat::PrecDiv(y, div, 5).ToDouble(),
-			BigFloat::PrecDiv(z, div, 5).ToDouble()));
+			BigFloat::PrecDiv(x, div, DIV_PRECISION).ToDouble(),
+			BigFloat::PrecDiv(y, div, DIV_PRECISION).ToDouble(),
+			BigFloat::PrecDiv(z, div, DIV_PRECISION).ToDouble()));
 		vertList.append(i);
 	}
 
@@ -687,9 +719,9 @@ void ember::drawPolygons(std::vector<Polygon*> p)
 			BigFloat z(vertPos.z.to_string());
 			BigFloat div(BIG_NUM_STR);
 			vertices.append(MPoint(
-				BigFloat::PrecDiv(x, div, 5).ToDouble(),
-				BigFloat::PrecDiv(y, div, 5).ToDouble(),
-				BigFloat::PrecDiv(z, div, 5).ToDouble()));
+				BigFloat::PrecDiv(x, div, DIV_PRECISION).ToDouble(),
+				BigFloat::PrecDiv(y, div, DIV_PRECISION).ToDouble(),
+				BigFloat::PrecDiv(z, div, DIV_PRECISION).ToDouble()));
 			vertList.append(j + totalVerts);
 		}
 		totalVerts += numVerts;
@@ -727,12 +759,12 @@ void ember::drawBoundingBox(AABB boundingBox)
 	BigFloat fminY(boundingBox.min.y.to_string());
 	BigFloat fminZ(boundingBox.min.z.to_string());
 	BigFloat div = BigFloat(BIG_NUM_STR);
-	double maxX = BigFloat::PrecDiv(fmaxX, div, 7).ToDouble();
-	double maxY = BigFloat::PrecDiv(fmaxY, div, 7).ToDouble();
-	double maxZ = BigFloat::PrecDiv(fmaxZ, div, 7).ToDouble();
-	double minX = BigFloat::PrecDiv(fminX, div, 7).ToDouble();
-	double minY = BigFloat::PrecDiv(fminY, div, 7).ToDouble();
-	double minZ = BigFloat::PrecDiv(fminZ, div, 7).ToDouble();
+	double maxX = BigFloat::PrecDiv(fmaxX, div, DIV_PRECISION).ToDouble();
+	double maxY = BigFloat::PrecDiv(fmaxY, div, DIV_PRECISION).ToDouble();
+	double maxZ = BigFloat::PrecDiv(fmaxZ, div, DIV_PRECISION).ToDouble();
+	double minX = BigFloat::PrecDiv(fminX, div, DIV_PRECISION).ToDouble();
+	double minY = BigFloat::PrecDiv(fminY, div, DIV_PRECISION).ToDouble();
+	double minZ = BigFloat::PrecDiv(fminZ, div, DIV_PRECISION).ToDouble();
 
 	MPointArray vertices;
 	vertices.append(MPoint(minX, maxY, maxZ));
@@ -815,8 +847,8 @@ void ember::drawSegment(Segment s)
 	BigFloat f(BIG_NUM_STR);
 	char buffer[1024];
 	sprintf_s(buffer, 1024, "curve -bezier -d 1 -p %f %f %f -p %f %f %f -k 0 -k 1", 
-		BigFloat::PrecDiv(fx1, f, 6).ToDouble(), BigFloat::PrecDiv(fy1, f, 6).ToDouble(), BigFloat::PrecDiv(fz1, f, 6).ToDouble(), 
-		BigFloat::PrecDiv(fx2, f, 6).ToDouble(), BigFloat::PrecDiv(fy2, f, 6).ToDouble(), BigFloat::PrecDiv(fz2, f, 6).ToDouble());
+		BigFloat::PrecDiv(fx1, f, DIV_PRECISION).ToDouble(), BigFloat::PrecDiv(fy1, f, DIV_PRECISION).ToDouble(), BigFloat::PrecDiv(fz1, f, 6).ToDouble(),
+		BigFloat::PrecDiv(fx2, f, DIV_PRECISION).ToDouble(), BigFloat::PrecDiv(fy2, f, DIV_PRECISION).ToDouble(), BigFloat::PrecDiv(fz2, f, 6).ToDouble());
 	MGlobal::executeCommand(buffer, true);
 	//MGlobal::displayInfo("buffer");
 }
