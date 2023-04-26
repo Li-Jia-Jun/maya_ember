@@ -28,7 +28,7 @@ namespace ember
 		BSPTree();
 		~BSPTree();
 		void SetMeshBounds(AABB bound01, AABB bound02);
-		void Build(BSPNode* rootNode);
+		void Build(BSPNode* rootNode, int mode);
 		void Split(BSPNode* node);
 		void LeafTask(BSPNode* leaf);
 		void BuildLocalBSP(BSPNode* leaf);
@@ -40,14 +40,18 @@ namespace ember
 		//Segment FindPathBackToRefPoint(RefPoint ref, Point x);
 		Segment FindPathBackToRefPoint2(RefPoint ref, Point x);
 
+		void WNVUnion(Polygon* polygon, std::vector<int> WNV);
+		void WNVIntersection(Polygon* polygon, std::vector<int> WNV);
 		void WNVBoolean(Polygon* polygon, std::vector<int> WNV);
-
+		
 	private:
 		std::mutex mutex;
 		AABB bound01;
 		AABB bound02;
 		std::vector<BSPNode*> nodes;				// Element 0 is root node
 		std::vector<Polygon*> outputPolygons;		// The final output (boolean)
+
+		int mode;									// Same as EMBER
 	};
 
 	// Local BSP for leaf node of the Global BSP

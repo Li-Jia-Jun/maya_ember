@@ -84,7 +84,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			for (int k = 0; k < polygonIt.polygonVertexCount(); k++)
 			{
 				MPoint point = pointArray[k];
-				// Keep track of 
+				// Keep track of each mesh bounding box
 				if (i == 0)
 				{
 					if (point.x < minX01)
@@ -178,25 +178,29 @@ MStatus helloMaya::doIt(const MArgList& argList)
 
 	ember.SetInitBounds(bound, bound01, bound02);
 
-	// The algorithm starts here
-	ember.BuildBSPTree();
-
 	if (argParser.isFlagSet("-u"))
 	{
+		ember.SetMode(0);
 		MGlobal::displayInfo("Reticuleana: Union");
 	}
 	else if (argParser.isFlagSet("-i"))
 	{
+		ember.SetMode(1);
 		MGlobal::displayInfo("Reticuleana: Intersection");
 	}
 	else if (argParser.isFlagSet("-s"))
 	{
+		ember.SetMode(2);
 		MGlobal::displayInfo("Reticuleana: Subtraction");
 	}
 	else
 	{
+		ember.SetMode(-1);
 		MGlobal::displayInfo("Error: no Boolean operation is selected");
 	}
+
+	// The algorithm starts here
+	ember.BuildBSPTree();
 
 	return status;
 }

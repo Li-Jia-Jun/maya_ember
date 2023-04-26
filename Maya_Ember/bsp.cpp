@@ -26,8 +26,13 @@ void BSPTree::SetMeshBounds(AABB bound01, AABB bound02)
 	this->bound02 = bound02;
 }
 
-void BSPTree::Build(BSPNode* rootNode)
+void BSPTree::Build(BSPNode* rootNode, int mode)
 {
+	this->mode = mode;
+
+	if (mode < 0)
+		return;
+
 	nodes.clear();
 	nodes.push_back(rootNode);
 
@@ -83,12 +88,6 @@ void BSPTree::Build(BSPNode* rootNode)
 	//	for (int j = 0; j < leaves[i]->polygons.size(); j++)
 	//	{
 	//		drawPolygon(leaves[i]->polygons[j]);
-
-	//		if (i == 0 && ((j == 0) || (j == 11)))
-	//		{
-	//			printStr("wrong polygon = ");
-	//			printPolygon(leaves[i]->polygons[j]);
-	//		}
 	//	}
 	//}
 	//printStr("WNV vectors for leaf nodes: ");
@@ -183,7 +182,20 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 		std::vector<int> WNV = leaf->refPoint.WNV;
 		WNV = TraceSegment(candidates, segment, WNV, i);
 		
-		WNVBoolean(polygon, WNV);
+		switch (mode)
+		{
+		case 0:
+			WNVUnion(polygon, WNV);
+			break;
+		case 1:
+			WNVIntersection(polygon, WNV);
+			break;
+		case 2:
+			WNVBoolean(polygon, WNV);
+			break;
+		default:
+			break;
+		}
 	}
 }
 
@@ -519,6 +531,38 @@ Segment BSPTree::FindPathBackToRefPoint2(RefPoint ref, Point x)
 	return Segment( line, b1 ,b2 );
 }
 
+void BSPTree::WNVUnion(Polygon* polygon, std::vector<int> WNV)
+{
+#if USE_MULTI_THREADING
+	const std::lock_guard<std::mutex> lock(mutex);
+#endif 
+
+	if (polygon->meshId == 0 && WNV[1] == 0)
+	{
+		outputPolygons.push_back(polygon);
+	}	
+	else if (polygon->meshId == 1 && WNV[0] == 0)
+	{
+		outputPolygons.push_back(polygon);
+	}
+}
+
+void BSPTree::WNVIntersection(Polygon* polygon, std::vector<int> WNV)
+{
+#if USE_MULTI_THREADING
+	const std::lock_guard<std::mutex> lock(mutex);
+#endif 
+
+	if (polygon->meshId == 0 && WNV[1] != 0)
+	{
+		outputPolygons.push_back(polygon);
+	}
+	else if (polygon->meshId == 1 && WNV[0] != 0)
+	{
+		outputPolygons.push_back(polygon);
+	}
+}
+
 void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
 {
 	// Temporary method to map WNV (assumes we only have 2 meshes for now)
@@ -527,27 +571,20 @@ void BSPTree::WNVBoolean(Polygon* polygon, std::vector<int> WNV)
 	const std::lock_guard<std::mutex> lock(mutex);
 #endif 
 
-	if (polygon->meshId == 0)
+	if (polygon->meshId == 0 && WNV[1] == 0)
 	{
-		if (WNV[1] == 0)
+		outputPolygons.push_back(polygon);
+	}
+	else if(polygon->meshId == 1 && WNV[0] > 0)
+	{
+		std::vector<Plane> bounds;
+		for (int i = polygon->bounds.size() - 1; i >= 0; i--)
 		{
-			outputPolygons.push_back(polygon);
+			bounds.push_back(polygon->bounds[i]);
 		}
+		Polygon* flipPolygon = new Polygon(polygon->meshId, polygon->support, bounds);
+		outputPolygons.push_back(flipPolygon);
 	}
-	else
-	{
-		if (WNV[0] > 0)
-		{		
-			std::vector<Plane> bounds;
-			for (int i = polygon->bounds.size() - 1; i >= 0; i--)
-			{
-				bounds.push_back(polygon->bounds[i]);
-			}
-			Polygon* flipPolygon = new Polygon(polygon->meshId, polygon->support, bounds);
-			outputPolygons.push_back(flipPolygon);
-		}
-	}
-
 }
 
 // ========== Local BSP ============

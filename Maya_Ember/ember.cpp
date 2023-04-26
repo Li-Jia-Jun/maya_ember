@@ -51,6 +51,11 @@ void EMBER::SetInitBounds(AABB bound, AABB bound01, AABB bound02)
 	bspTree.SetMeshBounds(bound01, bound02);
 }
 
+void EMBER::SetMode(int mode)
+{
+	this->mode = mode;
+}
+
 void EMBER::BuildBSPTree()
 {
 	//// Temp test code
@@ -83,5 +88,5 @@ void EMBER::BuildBSPTree()
 	root->refPoint = refPoint;
 
 	// Build BSP tree based on root node
-	bspTree.Build(root);
+	bspTree.Build(root, mode);
 }
