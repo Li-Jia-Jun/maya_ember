@@ -42,7 +42,7 @@ void BSPTree::Build(BSPNode* rootNode, int mode)
 	std::queue<BSPNode*> toTraverse;
 	toTraverse.push(rootNode);
 	int iterCount = 0;
-	while (!toTraverse.empty())
+	while (!toTraverse.empty() && iterCount < GLOBAL_BSP_NODE_COUNT)
 	{	
 		BSPNode* node = toTraverse.front();
 		toTraverse.pop();
@@ -65,10 +65,7 @@ void BSPTree::Build(BSPNode* rootNode, int mode)
 			toTraverse.push(node->rightChild);
 			nodes.push_back(node->rightChild);
 		}
-		if (++iterCount >= GLOBAL_BSP_NODE_COUNT)
-		{
-			break;
-		}
+		++iterCount;
 	}
 	printStr("Global BSP Construction Done");
 
@@ -179,9 +176,10 @@ void BSPTree::FaceClassification(BSPNode* leaf)
 			x = FindPolygonInteriorComplex(polygon);
 		}
 		Segment segment = FindPathBackToRefPoint2(leaf->refPoint, x);
+
 		std::vector<int> WNV = leaf->refPoint.WNV;
 		WNV = TraceSegment(candidates, segment, WNV, i);
-		
+
 		switch (mode)
 		{
 		case 0:

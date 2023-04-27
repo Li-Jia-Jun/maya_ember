@@ -238,6 +238,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 	std::vector<int> outPointMeshes;
 	std::vector<Point> inPoints;	// Temp solution to avoid counting twice when intersceting mutual line
 	std::vector<Point> outPoints;	// of two polygons
+
 	for (int i = 0; i < polygons.size(); i++)
 	{
 		if (i == selfMark)
@@ -246,7 +247,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 		Polygon* polygon = polygons[i];
 
 		// If we can guarantee that input mesh does not have self folding
-		if (polygon->meshId == selfMark)
+		if (selfMark >= 0 && polygon->meshId == polygons[selfMark]->meshId)
 			continue;
 
 		if (!isAABBIntersect(segmentAABB, polygon->aabb))
@@ -406,11 +407,11 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	// Collect divided edges to build polygons
 	Polygon* leftPolygon = nullptr;
 	Polygon* rightPolygon = nullptr;
-	if (leftEdgePlanes.size() >= 2)
+	if (leftEdgePlanes.size() > 2)
 	{
 		leftPolygon = new Polygon(polygon->meshId, polygon->support, leftEdgePlanes);
 	}
-	if (rightEdgePlanes.size() >= 2)
+	if (rightEdgePlanes.size() > 2)
 	{
 		rightPolygon = new Polygon(polygon->meshId, polygon->support, rightEdgePlanes);
 	}

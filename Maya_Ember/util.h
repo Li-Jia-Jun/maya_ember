@@ -21,7 +21,7 @@ namespace ember
 	
 #define LEAF_POLYGON_COUNT (20)
 
-#define GLOBAL_BSP_NODE_COUNT (1)
+#define GLOBAL_BSP_NODE_COUNT (15)
 
 #define AABB_OFFSET "100000000000000"
 
