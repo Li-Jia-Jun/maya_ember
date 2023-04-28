@@ -71,7 +71,4 @@ void EMBER::BuildBSPTree()
 
 	// Build BSP tree based on root node
 	bspTree.Build(root, mode);
-
-	//printStr("thread count = ");
-	//printNum(std::thread::hardware_concurrency());
 }

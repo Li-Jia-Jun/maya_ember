@@ -73,9 +73,34 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			// Get the normal and verts of the current face
 			polygonIt.getPoints(pointArray, MSpace::kWorld, &status);
 			polygonIt.getNormal(normal, MSpace::kWorld);
-			BigInt x = ember::bigFloatToBigInt(normal.x * bf);
-			BigInt y = ember::bigFloatToBigInt(normal.y * bf);
-			BigInt z = ember::bigFloatToBigInt(normal.z * bf);
+			
+			// If normal is axis-aligned then we don't need to scale it up
+			BigInt x, y, z;
+			if (normal.y == 0 && normal.z == 0)
+			{
+				x = normal.x > 0 ? 1 : -1;
+				y = 0;
+				z = 0;
+			}
+			else if (normal.x == 0 && normal.z == 0)
+			{
+				x = 0;
+				y = normal.y > 0 ? 1 : -1;
+				z = 0;
+			}
+			else if (normal.x == 0 && normal.y == 0) 
+			{
+				x = 0;
+				y = 0;
+				z = normal.z > 0 ? 1 : -1;
+			}
+			else
+			{
+				x = ember::bigFloatToBigInt(normal.x * bf);
+				y = ember::bigFloatToBigInt(normal.y * bf);
+				z = ember::bigFloatToBigInt(normal.z * bf);
+			}
+
 			ember::ivec3 emberNormal{ x, y, z };
 			normals.push_back(emberNormal);
 
@@ -198,6 +223,8 @@ MStatus helloMaya::doIt(const MArgList& argList)
 		ember.SetMode(-1);
 		MGlobal::displayInfo("Error: no Boolean operation is selected");
 	}
+
+	MGlobal::displayInfo("Mesh to plane based.");
 
 	// The algorithm starts here
 	ember.BuildBSPTree();

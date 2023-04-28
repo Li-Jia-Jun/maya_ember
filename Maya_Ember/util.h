@@ -23,13 +23,13 @@ namespace ember
 
 #define GLOBAL_BSP_NODE_COUNT (7)
 
-#define AABB_OFFSET "100000000000000"
+#define AABB_OFFSET "1000000000"
 
-#define POSITION_CLOSE "100000"
+#define POSITION_CLOSE "1000"
 
-#define POINT_AABB ivec3{BigInt("100000000000000"), BigInt("100000000000000"), BigInt("100000000000000")}
+#define POINT_AABB ivec3{BigInt(AABB_OFFSET), BigInt(AABB_OFFSET), BigInt(AABB_OFFSET)}
 
-#define BIG_NUM_STR "10000000000000000"
+#define BIG_NUM_STR "100000000000"
 
 
 	// ==================================

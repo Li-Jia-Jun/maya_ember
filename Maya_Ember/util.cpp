@@ -256,9 +256,8 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 		Point x = intersectSegmentPolygon(polygon, segment);
 		if (x.isValid())
 		{
-			ivec3 dir = segment.p2.getPosition() - segment.p1.getPosition();
-			BigInt sign = ivec3::dot(dir, polygon->support.getNormal());
-			if (sign > 0)
+			int c2 = classify(segment.p2, polygon->support);
+			if (c2 > 0)
 			{
 				// Segment is going out
 				bool diffPoint = true;
@@ -277,7 +276,7 @@ std::vector<int> ember::TraceSegment(std::vector<Polygon*> polygons, Segment seg
 					outPointMeshes.push_back(polygon->meshId);
 				}
 			}
-			else if (sign < 0)
+			else if (c2 < 0)
 			{
 				// Segment is going in
 				bool diffPoint = true;
@@ -407,11 +406,11 @@ std::pair<Polygon*, Polygon*> ember::splitPolygon(Polygon* polygon, Plane splitP
 	// Collect divided edges to build polygons
 	Polygon* leftPolygon = nullptr;
 	Polygon* rightPolygon = nullptr;
-	if (leftEdgePlanes.size() > 2)
+	if (leftEdgePlanes.size() >= 2)
 	{
 		leftPolygon = new Polygon(polygon->meshId, polygon->support, leftEdgePlanes);
 	}
-	if (rightEdgePlanes.size() > 2)
+	if (rightEdgePlanes.size() >= 2)
 	{
 		rightPolygon = new Polygon(polygon->meshId, polygon->support, rightEdgePlanes);
 	}
@@ -461,7 +460,7 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 	// If intersection point is not within segment
 	int c1 = classify(x, segment.bound1);
 	int c2 = classify(x, segment.bound2);
-	if (c1 > 0 || c2 > 0) // Points right on the segment end are considered 'interior'
+	if (c1 >= 0 || c2 >= 0) // Points right on the segment end are considered 'exterior'
 	{
 		x.x4 = 0; 
 	}
