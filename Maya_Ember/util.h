@@ -21,15 +21,15 @@ namespace ember
 	
 #define LEAF_POLYGON_COUNT (20)
 
-#define GLOBAL_BSP_NODE_COUNT (7)
+#define GLOBAL_BSP_NODE_COUNT (3)
 
-#define AABB_OFFSET "1000000000"
+#define AABB_OFFSET "100000000"
 
 #define POSITION_CLOSE "1000"
 
-#define POINT_AABB ivec3{BigInt(AABB_OFFSET), BigInt(AABB_OFFSET), BigInt(AABB_OFFSET)}
+#define POINT_AABB ivec3{int256_t(AABB_OFFSET), int256_t(AABB_OFFSET), int256_t(AABB_OFFSET)}
 
-#define BIG_NUM_STR "100000000000"
+#define BIG_NUM_STR "10000000000"
 
 
 	// ==================================
@@ -37,20 +37,18 @@ namespace ember
 
 	// ======== Basic Math =============
 
-	BigInt multiply(Point x, Plane s);
+	int256_t multiply(Point x, Plane s);
 
-	int sign(BigInt value);
+	int sign(int256_t value);
 
-	BigInt determiant3x3(
-		BigInt a, BigInt b, BigInt c,
-		BigInt d, BigInt e, BigInt f,
-		BigInt g, BigInt h, BigInt i);
+	int256_t determiant3x3(
+		int256_t a, int256_t b, int256_t c,
+		int256_t d, int256_t e, int256_t f,
+		int256_t g, int256_t h, int256_t i);
 
 	bool isDirectionEqual(ivec3 dir1, ivec3 dir2);
 
 	bool isPointEqual(Point p1, Point p2);
-
-	BigInt bigFloatToBigInt(BigFloat f);
 
 
 	// ======== Mesh Operation =============
@@ -111,7 +109,7 @@ namespace ember
 
 	void printStr(const char*);
 	void printVector(std::vector<int> vec);
-	void printNum(BigInt);
+	void printNum(int256_t);
 	void printIvec3(ivec3);
 	void printPoint(Point);
 	void printPlane(Plane);

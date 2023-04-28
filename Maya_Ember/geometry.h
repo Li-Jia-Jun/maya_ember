@@ -1,16 +1,18 @@
 #pragma once
 #include <vector>
 #include <queue>
-#include "BigInt.hpp"
-#include "BigFloat.h"
+#include "boost/multiprecision/cpp_int.hpp"
+#include "boost/multiprecision/cpp_bin_float.hpp"
 
 namespace ember
 {
+	using namespace boost::multiprecision;
+
 	struct ivec3
 	{
-		BigInt x, y, z;
+		int256_t x, y, z;
 
-		BigInt operator[](int i)
+		int256_t operator[](int i)
 		{
 			if (i == 0) return x;
 			else if (i == 1) return y;
@@ -33,7 +35,7 @@ namespace ember
 			return ivec3{ x * b.x, y * b.y, z * b.z };
 		}
 
-		ivec3 operator*(BigInt i)
+		ivec3 operator*(int256_t i)
 		{
 			return ivec3{ x * i, y * i, z * i };
 		}
@@ -50,13 +52,13 @@ namespace ember
 
 		static ivec3 cross(const ivec3& a, const ivec3& b)
 		{
-			BigInt i = a.y * b.z - a.z * b.y;
-			BigInt j = a.z * b.x - a.x * b.z;
-			BigInt k = a.x * b.y - a.y * b.x;
+			int256_t i = a.y * b.z - a.z * b.y;
+			int256_t j = a.z * b.x - a.x * b.z;
+			int256_t k = a.x * b.y - a.y * b.x;
 			return ivec3{i, j, k};
 		}
 
-		static BigInt dot(const ivec3& a, const ivec3& b)
+		static int256_t dot(const ivec3& a, const ivec3& b)
 		{
 			return a.x * b.x + a.y * b.y + a.z * b.z;
 		}
@@ -65,17 +67,10 @@ namespace ember
 	struct Point
 	{
 		// Homogenerous coordinate (obtained from intersect())
-		BigInt x1, x2, x3, x4;
+		int256_t x1, x2, x3, x4;
 
-		Point(BigInt xx1, BigInt xx2, BigInt xx3, BigInt xx4)
+		Point(int256_t xx1, int256_t xx2, int256_t xx3, int256_t xx4)
 		{
-			//if (xx1 % 100 == 0 && xx2 % 100 == 0 && xx3 % 100 == 0 && xx4 % 100 == 0)
-			//{
-			//	xx1 = xx1 / 100;
-			//	xx2 = xx2 / 100;
-			//	xx3 = xx3 / 100;
-			//	xx4 = xx4 / 100;
-			//}
 			x1 = xx1;
 			x2 = xx2;
 			x3 = xx3;
@@ -90,7 +85,7 @@ namespace ember
 		ivec3 getPosition()
 		{
 			// Cramer's rule
-			return ivec3{ BigInt(x1 / x4), BigInt(x2 / x4), BigInt(x3 / x4) };
+			return ivec3{ int256_t(x1 / x4), int256_t(x2 / x4), int256_t(x3 / x4) };
 		}
 	};
 	struct AABB
@@ -107,9 +102,9 @@ namespace ember
 	struct Plane
 	{
 		// ax + by + cz = d (This is the representation in Cramer's rule
-		BigInt a, b, c, d;
+		int256_t a, b, c, d;
 
-		Plane(BigInt aa, BigInt bb, BigInt cc, BigInt dd)
+		Plane(int256_t aa, int256_t bb, int256_t cc, int256_t dd)
 		{
 			//if (aa % 100 == 0 && bb % 100 == 0 && cc % 100 == 0 && dd % 100 == 0)
 			//{

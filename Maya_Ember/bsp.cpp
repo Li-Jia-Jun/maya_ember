@@ -67,7 +67,6 @@ void BSPTree::Build(BSPNode* rootNode, int mode)
 		}
 		++iterCount;
 	}
-	printStr("Global BSP Construction Done");
 
 	// Gather leaf nodes
 	std::vector<BSPNode*> leaves;
@@ -270,29 +269,29 @@ void BSPTree::Split(BSPNode* node)
 	// Split by the midpoint of the longest length
 	// The split plane always orient along positive axis
 	int axis;
-	BigInt midValue;
+	int256_t midValue;
 	Plane splitPlane;
 	ivec3 min = node->bound.min;
 	ivec3 max = node->bound.max;
-	BigInt boundX = max.x - min.x;
-	BigInt boundY = max.y - min.y;
-	BigInt boundZ = max.z - min.z;
+	int256_t boundX = max.x - min.x;
+	int256_t boundY = max.y - min.y;
+	int256_t boundZ = max.z - min.z;
 	if (boundX >= boundY && boundX >= boundZ)
 	{
 		axis = 0;
-		midValue = BigInt((min.x + max.x) / BigInt(2));
+		midValue = int256_t((min.x + max.x) / int256_t(2));
 		splitPlane = Plane::fromPositionNormal(ivec3{ midValue, min.y, min.z }, ivec3{ 1, 0, 0 });
 	}
 	else if (boundY >= boundX && boundY >= boundZ)
 	{
 		axis = 1;
-		midValue = BigInt((min.y + max.y) / BigInt(2));
+		midValue = int256_t((min.y + max.y) / int256_t(2));
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, midValue, min.z }, ivec3{ 0, 1, 0 });
 	}
 	else
 	{
 		axis = 2;
-		midValue = BigInt((min.z + max.z) / BigInt(2));
+		midValue = int256_t((min.z + max.z) / int256_t(2));
 		splitPlane = Plane::fromPositionNormal(ivec3{ min.x, min.y, midValue }, ivec3{ 0, 0, 1 });
 	}
 

@@ -14,6 +14,8 @@ void* helloMaya::creator()
 // Plugin doIt function
 MStatus helloMaya::doIt(const MArgList& argList)
 {
+	using namespace boost::multiprecision;
+
 	MStatus status;
 
 	MSyntax syntax;
@@ -40,7 +42,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 	float minX01 = 100000000, minY01 = 100000000, minZ01 = 100000000, maxX01 = -100000000, maxY01 = -100000000, maxZ01 = -100000000;
 	float minX02 = 100000000, minY02 = 100000000, minZ02 = 100000000, maxX02 = -100000000, maxY02 = -100000000, maxZ02 = -100000000;
 
-	BigFloat bf(BIG_NUM_STR);
+	cpp_bin_float_100 bf(BIG_NUM_STR);
 
 	if (selectionList.length() < 2)
 	{
@@ -75,7 +77,7 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			polygonIt.getNormal(normal, MSpace::kWorld);
 			
 			// If normal is axis-aligned then we don't need to scale it up
-			BigInt x, y, z;
+			int256_t x, y, z;
 			if (normal.y == 0 && normal.z == 0)
 			{
 				x = normal.x > 0 ? 1 : -1;
@@ -96,9 +98,9 @@ MStatus helloMaya::doIt(const MArgList& argList)
 			}
 			else
 			{
-				x = ember::bigFloatToBigInt(normal.x * bf);
-				y = ember::bigFloatToBigInt(normal.y * bf);
-				z = ember::bigFloatToBigInt(normal.z * bf);
+				x = int256_t(normal.x * bf);
+				y = int256_t(normal.y * bf);
+				z = int256_t(normal.z * bf);
 			}
 
 			ember::ivec3 emberNormal{ x, y, z };
@@ -166,9 +168,9 @@ MStatus helloMaya::doIt(const MArgList& argList)
 				}			
 
 				// Scale the vert pos to a big enough number
-				BigInt px = ember::bigFloatToBigInt(point.x * bf);
-				BigInt py = ember::bigFloatToBigInt(point.y * bf);
-				BigInt pz = ember::bigFloatToBigInt(point.z * bf);
+				int256_t px = int256_t(point.x * bf);
+				int256_t py = int256_t(point.y * bf);
+				int256_t pz = int256_t(point.z * bf);
 				ember::ivec3 vert{px, py, pz};
 				polyVerts.push_back(vert);
 			}
@@ -180,19 +182,19 @@ MStatus helloMaya::doIt(const MArgList& argList)
 	}
 
 	ember::AABB bound, bound01, bound02;
-	bound01.max.x = ember::bigFloatToBigInt(BigFloat(maxX01) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-	bound01.max.y = ember::bigFloatToBigInt(BigFloat(maxY01) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-	bound01.max.z = ember::bigFloatToBigInt(BigFloat(maxZ01) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-	bound01.min.x = ember::bigFloatToBigInt(BigFloat(minX01) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
-	bound01.min.y = ember::bigFloatToBigInt(BigFloat(minY01) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
-	bound01.min.z = ember::bigFloatToBigInt(BigFloat(minZ01) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
+	bound01.max.x = int256_t(cpp_bin_float_100(maxX01) * cpp_bin_float_100(BIG_NUM_STR) + cpp_bin_float_100(AABB_OFFSET));
+	bound01.max.y = int256_t(cpp_bin_float_100(maxY01) * cpp_bin_float_100(BIG_NUM_STR) + cpp_bin_float_100(AABB_OFFSET));
+	bound01.max.z = int256_t(cpp_bin_float_100(maxZ01) * cpp_bin_float_100(BIG_NUM_STR) + cpp_bin_float_100(AABB_OFFSET));
+	bound01.min.x = int256_t(cpp_bin_float_100(minX01) * cpp_bin_float_100(BIG_NUM_STR) - cpp_bin_float_100(AABB_OFFSET));
+	bound01.min.y = int256_t(cpp_bin_float_100(minY01) * cpp_bin_float_100(BIG_NUM_STR) - cpp_bin_float_100(AABB_OFFSET));
+	bound01.min.z = int256_t(cpp_bin_float_100(minZ01) * cpp_bin_float_100(BIG_NUM_STR) - cpp_bin_float_100(AABB_OFFSET));
 
-	bound02.max.x = ember::bigFloatToBigInt(BigFloat(maxX02) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-	bound02.max.y = ember::bigFloatToBigInt(BigFloat(maxY02) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-	bound02.max.z = ember::bigFloatToBigInt(BigFloat(maxZ02) * BigFloat(BIG_NUM_STR) + BigFloat(AABB_OFFSET));
-	bound02.min.x = ember::bigFloatToBigInt(BigFloat(minX02) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
-	bound02.min.y = ember::bigFloatToBigInt(BigFloat(minY02) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
-	bound02.min.z = ember::bigFloatToBigInt(BigFloat(minZ02) * BigFloat(BIG_NUM_STR) - BigFloat(AABB_OFFSET));
+	bound02.max.x = int256_t(cpp_bin_float_100(maxX02) * cpp_bin_float_100(BIG_NUM_STR) + cpp_bin_float_100(AABB_OFFSET));
+	bound02.max.y = int256_t(cpp_bin_float_100(maxY02) * cpp_bin_float_100(BIG_NUM_STR) + cpp_bin_float_100(AABB_OFFSET));
+	bound02.max.z = int256_t(cpp_bin_float_100(maxZ02) * cpp_bin_float_100(BIG_NUM_STR) + cpp_bin_float_100(AABB_OFFSET));
+	bound02.min.x = int256_t(cpp_bin_float_100(minX02) * cpp_bin_float_100(BIG_NUM_STR) - cpp_bin_float_100(AABB_OFFSET));
+	bound02.min.y = int256_t(cpp_bin_float_100(minY02) * cpp_bin_float_100(BIG_NUM_STR) - cpp_bin_float_100(AABB_OFFSET));
+	bound02.min.z = int256_t(cpp_bin_float_100(minZ02) * cpp_bin_float_100(BIG_NUM_STR) - cpp_bin_float_100(AABB_OFFSET));
 
 	bound.max.x = bound01.max.x >= bound02.max.x ? bound01.max.x : bound02.max.x;
 	bound.max.y = bound01.max.y >= bound02.max.y ? bound01.max.y : bound02.max.y;

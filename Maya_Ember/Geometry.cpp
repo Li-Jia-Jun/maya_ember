@@ -49,7 +49,7 @@ Polygon::Polygon(int meshId, Plane support, std::vector<Plane> bounds) :
 		}
 	}
 
-	BigInt offset(AABB_OFFSET);
+	int256_t offset(AABB_OFFSET);
 	aabb.min = aabb.min - ivec3{ offset, offset, offset };
 	aabb.max = aabb.max + ivec3{ offset, offset, offset };
 }
