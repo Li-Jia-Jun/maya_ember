@@ -8,7 +8,7 @@
 using namespace ember;
 
 
-BigInt ember::multiply(Point x, Plane s)
+int256_t ember::multiply(Point x, Plane s)
 {
 	// Flip the s.d here because the representation in paper is different from Cramer's rule
 	// In Cramer's rule, we have ax + by + cz = d
@@ -16,21 +16,21 @@ BigInt ember::multiply(Point x, Plane s)
 	return (x.x1 * s.a + x.x2 * s.b + x.x3 * s.c + x.x4 * (-s.d));
 }
 
-int ember::sign(BigInt value)
+int ember::sign(int256_t value)
 {
-	if (value > BigInt(0)) return 1;
-	else if (value < BigInt(0)) return -1;
+	if (value > int256_t(0)) return 1;
+	else if (value < int256_t(0)) return -1;
 	else return 0;
 }
 
-BigInt ember::determiant3x3(
-	BigInt a, BigInt b, BigInt c,
-	BigInt d, BigInt e, BigInt f,
-	BigInt g, BigInt h, BigInt i)
+int256_t ember::determiant3x3(
+	int256_t a, int256_t b, int256_t c,
+	int256_t d, int256_t e, int256_t f,
+	int256_t g, int256_t h, int256_t i)
 {
-	BigInt t1 = a * (e * i - f * h);
-	BigInt t2 = b * (d * i - f * g);
-	BigInt t3 = c * (d * h - e * g);
+	int256_t t1 = a * (e * i - f * h);
+	int256_t t2 = b * (d * i - f * g);
+	int256_t t3 = c * (d * h - e * g);
 	return t1 - t2 + t3;
 }
 
@@ -42,25 +42,13 @@ bool ember::isDirectionEqual(ivec3 dir1, ivec3 dir2)
 
 bool ember::isPointEqual(Point p1, Point p2)
 {
-	BigInt close(POSITION_CLOSE);
+	int256_t close(POSITION_CLOSE);
 	bool b1 = abs(p1.x1 * p2.x4 - p2.x1 * p1.x4) < close;
 	bool b2 = abs(p1.x2 * p2.x4 - p2.x2 * p1.x4) < close;
 	bool b3 = abs(p1.x3 * p2.x4 - p2.x3 * p1.x4) < close;
 	return b1 && b2 && b3;
 }
 
-
-
-BigInt ember::bigFloatToBigInt(BigFloat f)
-{
-	std::string f_str = f.ToString();
-	auto iter = std::find(f_str.begin(), f_str.end(), '.');
-	if (iter != f_str.end())
-	{
-		f_str.erase(iter, f_str.end());
-	}
-	return BigInt(f_str);
-}
 
 bool ember::isPlaneEqual(Plane p1, Plane p2)
 {
@@ -109,9 +97,9 @@ bool ember::isPointInPolygon(Polygon* polygon, Point point)
 
 int ember::getCloestAxis(ivec3 dir)
 {
-	BigInt x = abs(dir.x);
-	BigInt y = abs(dir.y);
-	BigInt z = abs(dir.z);
+	int256_t x = abs(dir.x);
+	int256_t y = abs(dir.y);
+	int256_t z = abs(dir.z);
 
 	if (x > y && x > z)
 	{
@@ -163,13 +151,13 @@ AABB ember::getSegmentAABB(Segment& segment)
 {
 	ivec3 pos1 = segment.p1.getPosition();
 	ivec3 pos2 = segment.p2.getPosition();
-	BigInt minX = pos1.x < pos2.x ? pos1.x : pos2.x;
-	BigInt minY = pos1.y < pos2.y ? pos1.y : pos2.y;
-	BigInt minZ = pos1.z < pos2.z ? pos1.z : pos2.z;
-	BigInt maxX = pos1.x > pos2.x ? pos1.x : pos2.x;
-	BigInt maxY = pos1.y > pos2.y ? pos1.y : pos2.y;
-	BigInt maxZ = pos1.z > pos2.z ? pos1.z : pos2.z;
-	BigInt offset(AABB_OFFSET);
+	int256_t minX = pos1.x < pos2.x ? pos1.x : pos2.x;
+	int256_t minY = pos1.y < pos2.y ? pos1.y : pos2.y;
+	int256_t minZ = pos1.z < pos2.z ? pos1.z : pos2.z;
+	int256_t maxX = pos1.x > pos2.x ? pos1.x : pos2.x;
+	int256_t maxY = pos1.y > pos2.y ? pos1.y : pos2.y;
+	int256_t maxZ = pos1.z > pos2.z ? pos1.z : pos2.z;
+	int256_t offset(AABB_OFFSET);
 	return AABB{ ivec3{minX - offset, minY - offset, minZ - offset}, ivec3{maxX + offset, maxY + offset, maxZ + offset} };
 }
 
@@ -470,22 +458,22 @@ Point ember::intersectSegmentPolygon(Polygon* polygon, Segment segment)
 
 Point ember::intersect(Plane p, Plane q, Plane r)
 {
-	BigInt x1 = determiant3x3(
+	int256_t x1 = determiant3x3(
 		p.d, p.b, p.c,
 		q.d, q.b, q.c,
 		r.d, r.b, r.c);
 
-	BigInt x2 = determiant3x3(
+	int256_t x2 = determiant3x3(
 		p.a, p.d, p.c,
 		q.a, q.d, q.c,
 		r.a, r.d, r.c);
 
-	BigInt x3 = determiant3x3(
+	int256_t x3 = determiant3x3(
 		p.a, p.b, p.d,
 		q.a, q.b, q.d,
 		r.a, r.b, r.d);
 
-	BigInt x4 = determiant3x3(
+	int256_t x4 = determiant3x3(
 		p.a, p.b, p.c,
 		q.a, q.b, q.c,
 		r.a, r.b, r.c);
@@ -542,10 +530,10 @@ void ember::printVector(std::vector<int> vec)
 	}
 }
 
-void ember::printNum(BigInt n)
+void ember::printNum(int256_t n)
 {
 	char buffer[1024];
-	sprintf_s(buffer, "num: %s", n.to_string().c_str());
+	sprintf_s(buffer, "num: %s", n.str().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
@@ -553,7 +541,7 @@ void ember::printIvec3(ember::ivec3 v)
 {
 	char buffer[1024];
 	sprintf_s(buffer, "ivec3: %s %s %s", 
-		v.x.to_string().c_str(), v.y.to_string().c_str(), v.z.to_string().c_str());
+		v.x.str().c_str(), v.y.str().c_str(), v.z.str().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
@@ -561,7 +549,7 @@ void ember::printPoint(ember::Point p)
 {
 	char buffer[1024];
 	sprintf_s(buffer, "x1: %s x2: %s x3: %s x4: %s", 
-		p.x1.to_string().c_str(), p.x2.to_string().c_str(), p.x3.to_string().c_str(), p.x4.to_string().c_str());
+		p.x1.str().c_str(), p.x2.str().c_str(), p.x3.str().c_str(), p.x4.str().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
@@ -569,7 +557,7 @@ void ember::printPlane(ember::Plane p)
 {
 	char buffer[1024];
 	sprintf_s(buffer, "a: %s b: %s c: %s d: %s", 
-		p.a.to_string().c_str(), p.b.to_string().c_str(), p.c.to_string().c_str(), p.d.to_string().c_str());
+		p.a.str().c_str(), p.b.str().c_str(), p.c.str().c_str(), p.d.str().c_str());
 	MGlobal::displayInfo(buffer);
 }
 
@@ -627,14 +615,14 @@ void ember::drawPolygon(Polygon* p)
 		}
 
 		ivec3 vertPos = vert.getPosition();
-		BigFloat x(vertPos.x.to_string());
-		BigFloat y(vertPos.y.to_string());
-		BigFloat z(vertPos.z.to_string());
-		BigFloat div(BIG_NUM_STR);
+		cpp_bin_float_100 x(vertPos.x);
+		cpp_bin_float_100 y(vertPos.y);
+		cpp_bin_float_100 z(vertPos.z);
+		cpp_bin_float_100 div(BIG_NUM_STR);
 		vertices.append(MPoint(
-			BigFloat::PrecDiv(x, div, 5).ToDouble(),
-			BigFloat::PrecDiv(y, div, 5).ToDouble(),
-			BigFloat::PrecDiv(z, div, 5).ToDouble()));
+			(double)(x / div),
+			(double)(y / div),
+			(double)(z / div)));
 		vertList.append(i);
 	}
 
@@ -682,14 +670,14 @@ void ember::drawPolygons(std::vector<Polygon*> p)
 			}
 
 			ivec3 vertPos = vert.getPosition();
-			BigFloat x(vertPos.x.to_string());
-			BigFloat y(vertPos.y.to_string());
-			BigFloat z(vertPos.z.to_string());
-			BigFloat div(BIG_NUM_STR);
+			cpp_bin_float_100 x(vertPos.x);
+			cpp_bin_float_100 y(vertPos.y);
+			cpp_bin_float_100 z(vertPos.z);
+			cpp_bin_float_100 div(BIG_NUM_STR);
 			vertices.append(MPoint(
-				BigFloat::PrecDiv(x, div, 5).ToDouble(),
-				BigFloat::PrecDiv(y, div, 5).ToDouble(),
-				BigFloat::PrecDiv(z, div, 5).ToDouble()));
+				(double)(x / div),
+				(double)(y / div),
+				(double)(z / div)));
 			vertList.append(j + totalVerts);
 		}
 		totalVerts += numVerts;
@@ -720,19 +708,19 @@ void ember::drawBoundingBox(AABB boundingBox)
 {
 	static int count = 0;
 
-	BigFloat fmaxX(boundingBox.max.x.to_string());
-	BigFloat fmaxY(boundingBox.max.y.to_string());
-	BigFloat fmaxZ(boundingBox.max.z.to_string());
-	BigFloat fminX(boundingBox.min.x.to_string());
-	BigFloat fminY(boundingBox.min.y.to_string());
-	BigFloat fminZ(boundingBox.min.z.to_string());
-	BigFloat div = BigFloat(BIG_NUM_STR);
-	double maxX = BigFloat::PrecDiv(fmaxX, div, 7).ToDouble();
-	double maxY = BigFloat::PrecDiv(fmaxY, div, 7).ToDouble();
-	double maxZ = BigFloat::PrecDiv(fmaxZ, div, 7).ToDouble();
-	double minX = BigFloat::PrecDiv(fminX, div, 7).ToDouble();
-	double minY = BigFloat::PrecDiv(fminY, div, 7).ToDouble();
-	double minZ = BigFloat::PrecDiv(fminZ, div, 7).ToDouble();
+	cpp_bin_float_100 fmaxX(boundingBox.max.x);
+	cpp_bin_float_100 fmaxY(boundingBox.max.y);
+	cpp_bin_float_100 fmaxZ(boundingBox.max.z);
+	cpp_bin_float_100 fminX(boundingBox.min.x);
+	cpp_bin_float_100 fminY(boundingBox.min.y);
+	cpp_bin_float_100 fminZ(boundingBox.min.z);
+	cpp_bin_float_100 div = cpp_bin_float_100(BIG_NUM_STR);
+	double maxX = (double)(fmaxX / div);
+	double maxY = (double)(fmaxY / div);
+	double maxZ = (double)(fmaxZ / div);
+	double minX = (double)(fminX / div);
+	double minY = (double)(fminY / div);
+	double minZ = (double)(fminZ / div);
 
 	MPointArray vertices;
 	vertices.append(MPoint(minX, maxY, maxZ));
@@ -806,17 +794,17 @@ void ember::drawSegment(Segment s)
 	ivec3 p1p = p1.getPosition();
 	ivec3 p2p = p2.getPosition();
 	
-	BigFloat fx1(p1p.x.to_string());
-	BigFloat fy1(p1p.y.to_string());
-	BigFloat fz1(p1p.z.to_string());
-	BigFloat fx2(p2p.x.to_string());
-	BigFloat fy2(p2p.y.to_string());
-	BigFloat fz2(p2p.z.to_string());
-	BigFloat f(BIG_NUM_STR);
+	cpp_bin_float_100 fx1(p1p.x);
+	cpp_bin_float_100 fy1(p1p.y);
+	cpp_bin_float_100 fz1(p1p.z);
+	cpp_bin_float_100 fx2(p2p.x);
+	cpp_bin_float_100 fy2(p2p.y);
+	cpp_bin_float_100 fz2(p2p.z);
+	cpp_bin_float_100 f(BIG_NUM_STR);
 	char buffer[1024];
 	sprintf_s(buffer, 1024, "curve -bezier -d 1 -p %f %f %f -p %f %f %f -k 0 -k 1", 
-		BigFloat::PrecDiv(fx1, f, 6).ToDouble(), BigFloat::PrecDiv(fy1, f, 6).ToDouble(), BigFloat::PrecDiv(fz1, f, 6).ToDouble(), 
-		BigFloat::PrecDiv(fx2, f, 6).ToDouble(), BigFloat::PrecDiv(fy2, f, 6).ToDouble(), BigFloat::PrecDiv(fz2, f, 6).ToDouble());
+		(double)(fx1/f), (double)(fy1/f), (double)(fz1/f), 
+		(double)(fx2/f), (double)(fy2/f), (double)(fz2/f));
 	MGlobal::executeCommand(buffer, true);
 	//MGlobal::displayInfo("buffer");
 }
